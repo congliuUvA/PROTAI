@@ -55,7 +55,10 @@ def generate_central_atoms(struct: Bio.PDB.Structure.Structure) -> Tuple[List, L
     return ca_list, cb_list
 
 
-def select_in_range_atoms(struct, ca_list, cb_list, selected_central_atom_type="CA") -> Tuple[List, List]:
+def select_in_range_atoms(
+        struct, ca_list, cb_list,
+        selected_central_atom_type="CA", shift=0
+) -> Tuple[List, List, List]:
     """This function generates the selected in-range atom corresponding to the central atom ["CA", "CB"].
 
     Args:
@@ -63,10 +66,12 @@ def select_in_range_atoms(struct, ca_list, cb_list, selected_central_atom_type="
         ca_list: list containing CA in the PDB file.
         cb_list: list containing CB in the PDB file.
         selected_central_atom_type: string stating which central atom is selected.
+        shift: shift of carbon alpha along the diagonal direction.
 
     Returns:
         voxel_atom_lists: list of atoms contained in each 20*20*20 voxels.
         rot_mat: list of rotation matrix corresponding to every residue.
+        central_atom_coords: list of central atom coordinate after applying shift.
     """
     central_atom_list = ca_list if selected_central_atom_type == "CA" else cb_list
 
@@ -82,21 +87,30 @@ def select_in_range_atoms(struct, ca_list, cb_list, selected_central_atom_type="
     # record rotation matrix for every residue.
     rot_mats = []
 
+    # record central atom coordinates
+    central_atom_coords = []
+
+    # searching for atoms that are within the range
     for central_atom, ca_cb_vector in tqdm(zip(central_atom_list, ca_cb_vectors), total=len(ca_cb_vectors)):
         # the first atom in the voxel is the central atom.
         voxel_atom_list = [central_atom]
 
-        # generate rotation matrix
-        rot = np.identity(3) if selected_central_atom_type == "CA" else rotmat(corner_vector, ca_cb_vector)
+        # Shift of Ca position can be applied by confirming the shift of the central atom, i.e. by confirming the new
+        # central atom coordinates, vector subtraction
+        central_atom_coord = central_atom.get_coord() - shift * ca_cb_vector.normalized().get_array()
 
         # search in-sphere atoms
         # It doesn't matter if not transferring atom coordinate here but sphere is invariant.
-        searched_atom_list = nb_search.search(central_atom.get_coord(), np.sqrt(3*10**2) * 0.8)
+        searched_atom_list = nb_search.search(central_atom_coord, np.sqrt(3*10**2) * 0.8)
+
+        # generate rotation matrix
+        # same rotation for all the atoms from one residue
+        rot = np.identity(3) if selected_central_atom_type == "CA" else rotmat(corner_vector, ca_cb_vector)
 
         # keep in-range atoms
         for atom in searched_atom_list:
             # remember to left-multiply rotation matrix all the time when requiring atom coordinates.
-            central_range_list = range_editor(rot@central_atom.get_coord())
+            central_range_list = range_editor(rot@central_atom_coord)
             atom_coord = rot@atom.get_coord()
             range_x, range_y, range_z = central_range_list[0], central_range_list[1], central_range_list[2]
             atom_x, atom_y, atom_z = atom_coord[0], atom_coord[1], atom_coord[2]
@@ -105,32 +119,50 @@ def select_in_range_atoms(struct, ca_list, cb_list, selected_central_atom_type="
                     range_z[0] < atom_z < range_z[1]:
                 if atom != central_atom and atom.parent != central_atom.parent:
                     voxel_atom_list.append(atom)
+
+            if atom.parent == central_atom.parent and not (
+                    range_x[0] < atom_x < range_x[1] and
+                    range_y[0] < atom_y < range_y[1] and
+                    range_z[0] < atom_z < range_z[1]
+            ):
+                raise ValueError("Shift value needs to be justified,"
+                                 "atoms from central residual is not included in the box! "
+                                 "Please use a different shift value.")
+
         voxel_atom_lists.append(voxel_atom_list)
 
         # save rotation matrix
         rot_mats.append(rot)
 
-    return voxel_atom_lists, rot_mats
+        # save central atom coordinate
+        central_atom_coords.append(central_atom_coord)
+
+    return voxel_atom_lists, rot_mats, central_atom_coords
 
 
-def generate_voxel_atom_lists(struct: Bio.PDB.Structure.Structure) -> Tuple[List, List]:
+def generate_voxel_atom_lists(struct: Bio.PDB.Structure.Structure) -> Tuple[List, List, List]:
     """This function generates permitted range for every selected CA. (20 * 20 * 20), 0.8 A for dimension.
 
     Args:
         struct: structure in biopython.
     """
     ca_list, cb_list = generate_central_atoms(struct)
-    voxel_atom_lists, rot_mats = select_in_range_atoms(struct, ca_list, cb_list, selected_central_atom_type="CB")
-    return voxel_atom_lists, rot_mats
+    voxel_atom_lists, rot_mats, central_atom_coords = select_in_range_atoms(
+        struct, ca_list, cb_list, selected_central_atom_type="CB", shift=4
+    )
+    return voxel_atom_lists, rot_mats, central_atom_coords
 
 
-def generate_selected_element_voxel(selected_element: str, voxel_atom_list: List, rot_mat: np.array):
+def generate_selected_element_voxel(
+        selected_element: str, voxel_atom_list: List, rot_mat: np.array, central_atom_coord: np.array
+):
     """This function generate selected-element voxel by inserting True/False to 20*20*20 voxel.
 
     Args:
         selected_element: selected element for one single channel, "C", "N", "O", "S".
         voxel_atom_list: The pre-generated voxel list containing central CA atoms and the surrounding atoms.
         rot_mat: rotation matrix for the selected residue.
+        central_atom_coord: list of central atom coordinate after applying shift.
     """
     if selected_element not in ["C", "N", "O", "S"]:
         raise ValueError("'selected_element' has to be in the options of 'C', 'N', 'S', 'O'")
@@ -145,7 +177,8 @@ def generate_selected_element_voxel(selected_element: str, voxel_atom_list: List
             selected_atom_list.append(atom)
 
     # 3. Generate the coordinates of 20 * 20 * 20 voxels, (20, 20, 20, 8, 3)
-    initial_atom_coord = rot_mat@selected_atom_list[0].coord - 10 * 0.8
+    # view central atom as the centre of the box
+    initial_atom_coord = rot_mat@central_atom_coord - 10 * 0.8
     voxels_coords = [[[gen_one_voxel_coords(
         np.array([[initial_atom_coord[0] + i * 0.8],
                  [initial_atom_coord[1] + j * 0.8],
@@ -221,18 +254,20 @@ def main():
     struct = load_protein("3gbn.pdb")
 
     # 1. generate atom lists for 20*20*20 voxels
-    voxel_atom_lists, rot_mats = generate_voxel_atom_lists(struct)  # (num_ca, num_atoms_in_voxel)
+    voxel_atom_lists, rot_mats, central_atom_coords = generate_voxel_atom_lists(struct)  # (num_ca, num_atoms_in_voxel)
 
     # 2. take one voxel as an example.
-    example_index = 0
-    voxel_atom_list, rot_mat = voxel_atom_lists[example_index], rot_mats[example_index]
+    example_index = -1
+    (
+        voxel_atom_list, rot_mat, central_atom_coord
+    ) = (voxel_atom_lists[example_index], rot_mats[example_index], central_atom_coords[example_index])
 
     # 3. iterate through ["C", "N", "O", "S"]
     elements = ["C", "N", "O", "S"]
 
     all_voxel = []
     for element in elements:
-        selected_element_voxel = generate_selected_element_voxel(element, voxel_atom_list, rot_mat)
+        selected_element_voxel = generate_selected_element_voxel(element, voxel_atom_list, rot_mat, central_atom_coord)
         all_voxel.append(selected_element_voxel)
 
     # 4. visualization
