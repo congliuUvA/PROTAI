@@ -1,4 +1,4 @@
-# This file is for checking the properties of the given protein 3GBN.
+"""This file is for checking the properties of the given protein 3GBN."""
 
 import Bio
 from Bio.PDB.MMCIFParser import MMCIFParser

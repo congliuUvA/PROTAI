@@ -1,3 +1,5 @@
+"""This module is for voxel box generation."""
+
 from examination import load_protein
 import Bio
 import numpy as np
