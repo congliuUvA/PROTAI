@@ -11,6 +11,9 @@ from Bio.PDB.NeighborSearch import NeighborSearch
 from itertools import product
 from Bio.PDB.vectors import Vector, rotmat
 
+num_of_voxels = 40
+len_of_voxel = 0.4
+
 
 def range_editor(coord: ndarray) -> List:
     """This function edits the range of the coordinates,
@@ -23,9 +26,9 @@ def range_editor(coord: ndarray) -> List:
         range_list: list of x,y,z range
     """
     x, y, z = coord[0], coord[1], coord[2]
-    range_x = [x - 10 * 0.8, x + 10 * 0.8]
-    range_y = [y - 10 * 0.8, y + 10 * 0.8]
-    range_z = [z - 10 * 0.8, z + 10 * 0.8]
+    range_x = [x - num_of_voxels/2 * len_of_voxel, x + num_of_voxels/2 * len_of_voxel]
+    range_y = [y - num_of_voxels/2 * len_of_voxel, y + num_of_voxels/2 * len_of_voxel]
+    range_z = [z - num_of_voxels/2 * len_of_voxel, z + num_of_voxels/2 * len_of_voxel]
     range_list = [range_x, range_y, range_z]
     return range_list
 
@@ -97,23 +100,23 @@ def select_in_range_atoms(
         # the first atom in the voxel is the central atom.
         voxel_atom_list = [central_atom]
 
+        # generate rotation matrix
+        # same rotation for all the atoms from one residue
+        rot = np.identity(3) if selected_central_atom_type == "CA" else rotmat(corner_vector, ca_cb_vector)
+
         # Shift of Ca position can be applied by confirming the shift of the central atom, i.e. by confirming the new
         # central atom coordinates, vector subtraction
         central_atom_coord = central_atom.get_coord() - shift * ca_cb_vector.normalized().get_array()
 
         # search in-sphere atoms
-        # It doesn't matter if not transferring atom coordinate here but sphere is invariant.
-        searched_atom_list = nb_search.search(central_atom_coord, np.sqrt(3*10**2) * 0.8)
-
-        # generate rotation matrix
-        # same rotation for all the atoms from one residue
-        rot = np.identity(3) if selected_central_atom_type == "CA" else rotmat(corner_vector, ca_cb_vector)
+        # It doesn't matter if not transferring atom coordinate here because sphere is invariant.
+        searched_atom_list = nb_search.search(central_atom_coord, np.sqrt(3 * 10 ** 2) * 0.8)
 
         # keep in-range atoms
         for atom in searched_atom_list:
             # remember to left-multiply rotation matrix all the time when requiring atom coordinates.
-            central_range_list = range_editor(rot@central_atom_coord)
-            atom_coord = rot@atom.get_coord()
+            central_range_list = range_editor(rot @ central_atom_coord)
+            atom_coord = rot @ atom.get_coord()
             range_x, range_y, range_z = central_range_list[0], central_range_list[1], central_range_list[2]
             atom_x, atom_y, atom_z = atom_coord[0], atom_coord[1], atom_coord[2]
             if range_x[0] < atom_x < range_x[1] and \
@@ -150,7 +153,7 @@ def generate_voxel_atom_lists(struct: Bio.PDB.Structure.Structure) -> Tuple[List
     """
     ca_list, cb_list = generate_central_atoms(struct)
     voxel_atom_lists, rot_mats, central_atom_coords = select_in_range_atoms(
-        struct, ca_list, cb_list, selected_central_atom_type="CB", shift=4
+        struct, ca_list, cb_list, selected_central_atom_type="CB", shift=0
     )
     return voxel_atom_lists, rot_mats, central_atom_coords
 
@@ -170,7 +173,7 @@ def generate_selected_element_voxel(
         raise ValueError("'selected_element' has to be in the options of 'C', 'N', 'S', 'O'")
 
     # 1. create True False voxel.
-    voxels_bool = (np.ones((20, 20, 20)) == 0).astype(bool)
+    voxels_bool = (np.ones((num_of_voxels, num_of_voxels, num_of_voxels)) == 0).astype(bool)
 
     # 2. selected corresponding atoms
     selected_atom_list = [voxel_atom_list[0]]
@@ -178,18 +181,31 @@ def generate_selected_element_voxel(
         if atom.element == selected_element and atom.element in ["C", "N", "O", "S"]:
             selected_atom_list.append(atom)
 
-    # 3. Generate the coordinates of 20 * 20 * 20 voxels, (20, 20, 20, 8, 3)
-    # view central atom as the centre of the box
-    initial_atom_coord = rot_mat@central_atom_coord - 10 * 0.8
-    voxels_coords = [[[gen_one_voxel_coords(
-        np.array([[initial_atom_coord[0] + i * 0.8],
-                 [initial_atom_coord[1] + j * 0.8],
-                 [initial_atom_coord[2] + k * 0.8]])) for i in range(20)] for j in range(20)] for k in range(20)]
+    # 3. Generate the coordinates of 20 * 20 * 20 voxels,
+
+    # First method
+    # 8 coordinates of 8 vertex for 1 voxel, (20, 20, 20, 8, 3)
+    # initial_atom_coord = rot_mat@central_atom_coord - 10 * 0.8
+    # voxels_coords = [[[gen_one_voxel_coords(
+    #     np.array([[initial_atom_coord[0] + i * 0.8],
+    #              [initial_atom_coord[1] + j * 0.8],
+    #              [initial_atom_coord[2] + k * 0.8]])) for i in range(20)] for j in range(20)] for k in range(20)]
+
+    # Second method
+    # 1 centric coordinate for 1 voxel, (20, 20, 20, 3)
+    initial_atom_coord = rot_mat @ central_atom_coord - num_of_voxels/2 * len_of_voxel + len_of_voxel/2
+    voxels_coords = [[[[
+        initial_atom_coord[0] + i * len_of_voxel,
+        initial_atom_coord[1] + j * len_of_voxel,
+        initial_atom_coord[2] + k * len_of_voxel]
+        for i in range(num_of_voxels)]
+        for j in range(num_of_voxels)]
+        for k in range(num_of_voxels)]
     voxels_coords = np.array(voxels_coords)
 
     # 4. Add atom to the voxel.
     for atom in selected_atom_list:
-        atom_coord = rot_mat@atom.coord
+        atom_coord = rot_mat @ atom.coord
         voxels_bool = add_atom_to_voxel(atom, atom_coord, voxels_coords, voxels_bool)
     return voxels_bool
 
@@ -197,9 +213,16 @@ def generate_selected_element_voxel(
 def gen_one_voxel_coords(coord: np.array) -> np.array:
     """This function generates the eight coordinates
     of one single voxel given the coordinates of left corner of the voxel.
+
+    Args:
+        coord: coordinate of the most left and inner vertex of the voxel.
+
+    Returns:
+        voxel_coords: voxel coordinates of eight vertices.
     """
+    # 8 coordinates
     factor_list = np.array(list(product("01", repeat=3))).astype(np.int32)
-    voxel_coords = factor_list * 0.8 + coord.T
+    voxel_coords = factor_list * len_of_voxel + coord.T
     return voxel_coords
 
 
@@ -223,12 +246,17 @@ def add_atom_to_voxel(
 
     radius_table = {"C": 0.70, "N": 0.65, "O": 0.60, "S": 1.00}
 
-    dists_element_voxels_coords = np.sqrt(np.sum((voxels_coords - atom_coord) ** 2, axis=-1))  # (20, 20, 20, 8)
+    dists_element_voxels_coords = np.sqrt(np.sum((voxels_coords - atom_coord) ** 2, axis=-1))
+    # (20, 20, 20)
     contact_element_voxel_coords = np.where(dists_element_voxels_coords < radius_table[atom.element])
+    add_bool = contact_element_voxel_coords
+    voxels_bool[add_bool[0].T, add_bool[1].T, add_bool[2].T] = True
+
+    # (20, 20, 20, 8)
     # only care about the previous three arrays, which represent the coordinate the of voxels, for the last array, it
     # represents the index of the vertex that has been occupied.
-    add_bool = np.unique(np.array(contact_element_voxel_coords)[:-1].T, axis=0)  # (3, number_of_occupied_voxel)
-    voxels_bool[add_bool.T[0], add_bool.T[1], add_bool.T[2]] = True
+    # add_bool = np.unique(np.array(contact_element_voxel_coords)[:-1].T, axis=0)  # (3, number_of_occupied_voxel)
+    # voxels_bool[add_bool[0].T, add_bool[1].T, add_bool[2].T] = True
 
     return voxels_bool
 
@@ -259,7 +287,7 @@ def main():
     voxel_atom_lists, rot_mats, central_atom_coords = generate_voxel_atom_lists(struct)  # (num_ca, num_atoms_in_voxel)
 
     # 2. take one voxel as an example.
-    example_index = -1
+    example_index = 0
     (
         voxel_atom_list, rot_mat, central_atom_coord
     ) = (voxel_atom_lists[example_index], rot_mats[example_index], central_atom_coords[example_index])
