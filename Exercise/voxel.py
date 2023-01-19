@@ -15,24 +15,6 @@ num_of_voxels = 40
 len_of_voxel = 0.4
 
 
-def range_editor(coord: ndarray) -> List:
-    """This function edits the range of the coordinates,
-    given the central position of the ca atom under the cartesian coordinates.
-
-    Args:
-        coord: central ca coords.
-
-    Returns:
-        range_list: list of x,y,z range
-    """
-    x, y, z = coord[0], coord[1], coord[2]
-    range_x = [x - num_of_voxels / 2 * len_of_voxel, x + num_of_voxels / 2 * len_of_voxel]
-    range_y = [y - num_of_voxels / 2 * len_of_voxel, y + num_of_voxels / 2 * len_of_voxel]
-    range_z = [z - num_of_voxels / 2 * len_of_voxel, z + num_of_voxels / 2 * len_of_voxel]
-    range_list = [range_x, range_y, range_z]
-    return range_list
-
-
 def generate_central_atoms(struct: Bio.PDB.Structure.Structure) -> Tuple[List, List]:
     """This function generates central atom lists and their corresponding ranges.
 
@@ -92,17 +74,17 @@ def is_in_range(vertices_coords: np.array, atom: Bio.PDB.Atom.Atom, center_coord
     atom_center_vector = atom.coord - center_coord
     vector_coord_diff = vertices_coords - vertices_coords[0]
     x_vector, y_vector, z_vector = vector_coord_diff[1], vector_coord_diff[2], vector_coord_diff[4]
-    # x_vector = x_vector / np.linalg.norm(x_vector)
-    # y_vector = y_vector / np.linalg.norm(y_vector)
-    # z_vector = z_vector / np.linalg.norm(z_vector)
-    #
-    # in_range = (abs(atom_center_vector @ x_vector) * 2 < length_of_box) and \
-    #            (abs(atom_center_vector @ y_vector) * 2 < length_of_box) and \
-    #            (abs(atom_center_vector @ z_vector) * 2 < length_of_box)
+    x_vector = x_vector / np.linalg.norm(x_vector)
+    y_vector = y_vector / np.linalg.norm(y_vector)
+    z_vector = z_vector / np.linalg.norm(z_vector)
 
-    xyz_mat = np.array([x_vector, y_vector, z_vector])
-    xyz_mat = xyz_mat / np.linalg.norm(xyz_mat, axis=1)
-    in_range = np.all(xyz_mat@atom_center_vector * 2 < length_of_box)
+    in_range = (abs(atom_center_vector @ x_vector) * 2 < length_of_box) and \
+               (abs(atom_center_vector @ y_vector) * 2 < length_of_box) and \
+               (abs(atom_center_vector @ z_vector) * 2 < length_of_box)
+
+    # xyz_mat = np.array([x_vector, y_vector, z_vector])
+    # xyz_mat = xyz_mat / np.linalg.norm(xyz_mat, axis=1)
+    # in_range = np.all(xyz_mat@atom_center_vector * 2 < length_of_box)
 
     return in_range
 
@@ -203,6 +185,42 @@ def generate_voxel_atom_lists(struct: Bio.PDB.Structure.Structure) -> Tuple[List
     return voxel_atom_lists, central_atom_coords, vertices_coords
 
 
+def generate_cubic_centre_coords(vertices_coord: np.array) -> np.array:
+    """This function generates centric coordinates for each of the sub-voxel, by given 8 coordinates of big voxel.
+
+    Args:
+        vertices_coord: coordinates of 8 vertices
+
+    Returns:
+        sub_voxel_centre_coords: sub voxel center coordinates
+    """
+    corner_vector = Vector(1, 1, 1)
+    rotated_corner_vector = Vector(vertices_coord[-1] - vertices_coord[0])
+    # define rotation matrix that rotate the corner vector back to standard xyz system
+    rot = rotmat(rotated_corner_vector, corner_vector)
+    # define the inverse rotation matrix
+    rot_inv = rotmat(corner_vector, rotated_corner_vector)
+
+    # rotate to standard xyz system
+    cartesian_vertices_coord = (vertices_coord - vertices_coord[0])@rot.T + vertices_coord[0]
+    left_down_corner_coord, right_up_corner_coord = cartesian_vertices_coord[0], cartesian_vertices_coord[-1]
+    x_split = np.linspace(left_down_corner_coord[0], right_up_corner_coord[0], num=num_of_voxels + 1)[
+              :-1] + (right_up_corner_coord[0] - left_down_corner_coord[0]) / num_of_voxels / 2
+    y_split = np.linspace(left_down_corner_coord[1], right_up_corner_coord[1], num=num_of_voxels + 1)[
+              :-1] + (right_up_corner_coord[1] - left_down_corner_coord[1]) / num_of_voxels / 2
+    z_split = np.linspace(left_down_corner_coord[2], right_up_corner_coord[2], num=num_of_voxels + 1)[
+              :-1] + (right_up_corner_coord[2] - left_down_corner_coord[2]) / num_of_voxels / 2
+    # centre coordinates of sub voxels (20, 20, 20, 3)
+    sub_voxel_centre_coords = np.array([[[[x_split[i], y_split[j], z_split[k]]
+                                          for i in range(num_of_voxels)]
+                                         for j in range(num_of_voxels)]
+                                        for k in range(num_of_voxels)])
+
+    # rotate to original angle
+    sub_voxel_centre_coords = (sub_voxel_centre_coords - vertices_coord[0])@rot_inv.T + vertices_coord[0]
+    return sub_voxel_centre_coords
+
+
 def generate_selected_element_voxel(
         selected_element: str, voxel_atom_list: List, central_atom_coord: np.array, vertices_coord: np.array,
 ):
@@ -228,41 +246,12 @@ def generate_selected_element_voxel(
 
     # 3. Generate the coordinates of 20 * 20 * 20 voxels,
     # one centric coordinate for one sub voxel, (20, 20, 20, 3)
-    left_down_corner_coord, right_up_corner_coord = vertices_coord[0], vertices_coord[-1]  # left-down corner
-    x_split = np.linspace(left_down_corner_coord[0], right_up_corner_coord[0], num=num_of_voxels + 1)[
-              :-1] + len_of_voxel / 2
-    y_split = np.linspace(left_down_corner_coord[1], right_up_corner_coord[1], num=num_of_voxels + 1)[
-              :-1] + len_of_voxel / 2
-    z_split = np.linspace(left_down_corner_coord[2], right_up_corner_coord[2], num=num_of_voxels + 1)[
-              :-1] + len_of_voxel / 2
-    # centre coordinates of sub voxels (20, 20, 20, 3)
-    sub_voxel_centre_coords = [[[[x_split[i], y_split[j], z_split[k]]
-                                 for i in range(num_of_voxels)]
-                                for j in range(num_of_voxels)]
-                               for k in range(num_of_voxels)]
-    sub_voxel_centre_coords = np.array(sub_voxel_centre_coords)
+    sub_voxel_centre_coords = generate_cubic_centre_coords(vertices_coord)
 
     # 4. Add atom to the voxel.
     for atom in selected_atom_list:
-        atom_coord = atom.coord
-        voxels_bool = add_atom_to_voxel(atom, atom_coord, sub_voxel_centre_coords, voxels_bool)
+        voxels_bool = add_atom_to_voxel(atom, atom.coord, sub_voxel_centre_coords, voxels_bool)
     return voxels_bool
-
-
-def gen_one_voxel_coords(coord: np.array) -> np.array:
-    """This function generates the eight coordinates
-    of one single voxel given the coordinates of left corner of the voxel.
-
-    Args:
-        coord: coordinate of the most left and inner vertex of the voxel.
-
-    Returns:
-        voxel_coords: voxel coordinates of eight vertices.
-    """
-    # 8 coordinates
-    factor_list = np.array(list(product("01", repeat=3))).astype(np.int32)
-    voxel_coords = factor_list * len_of_voxel + coord.T
-    return voxel_coords
 
 
 def add_atom_to_voxel(
@@ -287,6 +276,9 @@ def add_atom_to_voxel(
     dists_element_voxels_coords = np.sqrt(np.sum((sub_voxel_centre_coords - atom_coord) ** 2, axis=-1))
     # (20, 20, 20)
     add_bool = np.where(dists_element_voxels_coords < radius_table[atom.element])
+    # print("dist coord", sub_voxel_centre_coords.reshape(-1, 3)[np.argmin(dists_element_voxels_coords)])
+    # print("atom:", atom.coord)
+    # print(np.min(dists_element_voxels_coords))
     voxels_bool[add_bool[0].T, add_bool[1].T, add_bool[2].T] = True
 
     return voxels_bool
@@ -318,7 +310,7 @@ def main():
     voxel_atom_lists, central_atom_coords, vertices_coords = generate_voxel_atom_lists(struct)
 
     # 2. take one voxel as an example.
-    example_index = 0
+    example_index = -3
     (
         voxel_atom_list, central_atom_coord, vertices_coord
     ) = (voxel_atom_lists[example_index], central_atom_coords[example_index], vertices_coords[example_index])
