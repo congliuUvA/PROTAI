@@ -310,7 +310,7 @@ def main():
     voxel_atom_lists, central_atom_coords, vertices_coords = generate_voxel_atom_lists(struct)
 
     # 2. take one voxel as an example.
-    example_index = -3
+    example_index = -1
     (
         voxel_atom_list, central_atom_coord, vertices_coord
     ) = (voxel_atom_lists[example_index], central_atom_coords[example_index], vertices_coords[example_index])
