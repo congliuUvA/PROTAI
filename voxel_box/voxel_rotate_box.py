@@ -10,9 +10,10 @@ import matplotlib.pyplot as plt
 from Bio.PDB.NeighborSearch import NeighborSearch
 from itertools import product
 from Bio.PDB.vectors import Vector, rotmat
+from pathlib import Path
 
-num_of_voxels = 40
-len_of_voxel = 0.4
+num_of_voxels = 20
+len_of_voxel = 0.8
 
 
 def generate_central_atoms(struct: Bio.PDB.Structure.Structure) -> Tuple[List, List]:
@@ -304,13 +305,14 @@ def visualize_voxels(voxel_list: List):
 def main():
     """The main function of generating voxels."""
     # 0. Load protein structure
-    struct = load_protein("3gbn.pdb")
+    structure_name = "3gbn.pdb"
+    struct = load_protein(structure_name)
 
     # 1. generate atom lists for 20*20*20 voxels
     voxel_atom_lists, central_atom_coords, vertices_coords = generate_voxel_atom_lists(struct)
 
     # 2. take one voxel as an example.
-    example_index = -1
+    example_index = 0
     (
         voxel_atom_list, central_atom_coord, vertices_coord
     ) = (voxel_atom_lists[example_index], central_atom_coords[example_index], vertices_coords[example_index])
@@ -325,6 +327,13 @@ def main():
 
     # 4. visualization
     visualize_voxels(all_voxel)
+
+    # 5. save box coordinates
+    box_coords_dir_path = Path.cwd().parent.joinpath("box_coords")
+    if not box_coords_dir_path.exists():
+        box_coords_dir_path.mkdir()
+    structure_box_coords_path = box_coords_dir_path.joinpath(Path(structure_name).stem + ".npy")
+    np.save(str(structure_box_coords_path), vertices_coords)
 
 
 if __name__ == "__main__":
