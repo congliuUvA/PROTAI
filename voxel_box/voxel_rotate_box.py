@@ -11,36 +11,10 @@ from Bio.PDB.NeighborSearch import NeighborSearch
 from itertools import product
 from Bio.PDB.vectors import Vector, rotmat
 from pathlib import Path
+from voxel_rotate_atom import generate_central_atoms, visualize_voxels
 
 num_of_voxels = 20
 len_of_voxel = 0.8
-
-
-def generate_central_atoms(struct: Bio.PDB.Structure.Structure) -> Tuple[List, List]:
-    """This function generates central atom lists and their corresponding ranges.
-
-    Args:
-        struct: structure in biopython.
-
-    Returns:
-        ca_list
-        cb_list
-    """
-    ca_list, cb_list = [], []
-    for res in struct.get_residues():
-        for atom in res.get_atoms():
-            if atom.get_parent().get_resname() == "GLY":
-                if atom.get_name() == "CA":
-                    ca_list.append(atom)
-                    cb_list.append(atom)
-                    continue
-
-            if atom.get_name() == "CA":
-                ca_list.append(atom)
-            if atom.get_name() == "CB":
-                cb_list.append(atom)
-
-    return ca_list, cb_list
 
 
 def generate_vertices(central_coord: np.array, rot: np.array) -> np.array:
@@ -283,23 +257,6 @@ def add_atom_to_voxel(
     voxels_bool[add_bool[0].T, add_bool[1].T, add_bool[2].T] = True
 
     return voxels_bool
-
-
-def visualize_voxels(voxel_list: List):
-    """This function visualizes the voxels of CNOS.
-
-    Args:
-        voxel_list: a list include all voxels of 4 channels.
-    """
-    voxelarray = voxel_list[0] | voxel_list[1] | voxel_list[2] | voxel_list[3]
-    colors = np.empty(voxelarray.shape, dtype=object)
-    colors[voxel_list[0]] = "green"
-    colors[voxel_list[1]] = "blue"
-    colors[voxel_list[2]] = "red"
-    colors[voxel_list[3]] = "yellow"
-    ax = plt.figure().add_subplot(projection='3d')
-    ax.voxels(voxelarray, facecolors=colors, edgecolor='k')
-    plt.show()
 
 
 def main():

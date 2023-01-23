@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebServers">
+    <option name="servers">
+      <webServer id="8736e228-a2b3-46b7-ae07-77f3151316e7" name="UvA IvI">
+        <fileTransfer accessType="SFTP" host="ivi-h0.science.uva.nl" port="22" sshConfigId="06724ef0-4510-43c7-aef8-cffd5dfceaca" sshConfig="UvA IvI">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" passiveMode="true" shareSSLContext="true" />
+          </advancedOptions>
+        </fileTransfer>
+      </webServer>
+    </option>
+  </component>
+</project>
