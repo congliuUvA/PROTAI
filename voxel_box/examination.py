@@ -12,19 +12,55 @@ import os
 from pathlib import Path
 
 
-def load_protein(pdb_name: str, file_path: str) -> Bio.PDB.Structure.Structure:
+def pqr2pdb(fname_pqr, fname_pdb):
+
+    lines = open(fname_pqr, 'r').readlines()
+    fout = open(fname_pdb, 'w')
+
+    chain_id = ['A', 'B', 'C', 'D', 'E', 'F',
+                'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N']
+    ich = 0
+    for line in lines:
+        content = line.split()
+        if line[:6] in ['ATOM  ', 'HETATM']:
+            atnm = line[13:15].upper()
+            resName = line[17:20].upper()
+            symbol = atnm[0]
+            if atnm[:2] in ['CL', 'NA', 'MG', 'BE', 'LI', 'ZN']:
+                symbol = atnm[:2]
+            elif atnm[:2] == 'CA' and resName[:2] == 'CA':
+                symbol = 'CA'
+            sline = line[:21] + chain_id[ich] + line[22:54] + \
+                "  " + content[-2] + "  " + content[-1] + "          %2s  " % symbol
+            print(sline, file=fout)
+        elif line[:3] == 'END':
+            print('END', file=fout)
+        else:
+            print(line[:-1], file=fout)
+
+        if line[:3] == 'TER':
+            ich += 1
+
+    fout.close()
+
+
+def load_protein(arguments, pdb_name: str, file_path: str) -> Bio.PDB.Structure.Structure:
     """This function is used to load the protein file in format of mmCIF to the structure in Biopython.
 
     Args:
+        arguments: arguments input by users.
         pdb_name: PDB ID
         file_path: file path of the protein file.
 
     Returns:
         struct: Structure of the selected protein in Biopython.
     """
-    os.system(f"pdb2pqr30 --ff=PARSE {file_path} {Path(file_path).parent.joinpath(pdb_name)}.pqr")
-    parser = PDBParser(QUIET=1, is_pqr=True)
-    struct = parser.get_structure(pdb_name, str(Path(file_path).parent.joinpath(pdb_name)) + ".pqr")
+    if arguments.addH:
+        pqr_file_path = str(Path(file_path).parent.joinpath(pdb_name)) + ".pqr"
+        os.system(f"pdb2pqr30 --ff=PARSE {file_path} {pqr_file_path}")
+        pqr2pdb(pqr_file_path, Path(file_path).stem + "_pqr.pdb")
+    parser = PDBParser(QUIET=1)
+    struct = parser.get_structure(pdb_name, Path(file_path).stem + "_pqr.pdb")
     return struct
 
 
@@ -66,7 +102,6 @@ def count_numbers(struct:  Bio.PDB.Structure.Structure):
         num_chain += 1
         for res in chain:
             num_res += 1 if res.get_id()[0] == " " else 0  # only count number if it's standard residue
-            # num_res += 1
             for atom in res:
                 num_atom += 1
 
