@@ -11,8 +11,8 @@ from Bio.PDB.NeighborSearch import NeighborSearch
 from itertools import product
 from Bio.PDB.vectors import Vector, rotmat
 
-num_of_voxels = 40
-len_of_voxel = 0.4
+num_of_voxels = 20
+len_of_voxel = 0.8
 
 
 def range_editor(coord: ndarray) -> List:
@@ -53,7 +53,16 @@ def generate_central_atoms(struct: Bio.PDB.Structure.Structure) -> Tuple[List, L
             if atom.get_name() == "CB":
                 cb_list.append(atom)
 
-    return ca_list, cb_list
+    # sampling
+    ca_sample, cb_sample = [], []
+    num_res = len(ca_list)
+    sample_num = max(num_res // 2, 100)
+    sample_index = np.random.randint((0, num_res-1), sample_num)
+    for index in sample_index:
+        ca_sample.append(ca_list[index])
+        cb_sample.append(cb_list[index])
+
+    return ca_sample, cb_sample
 
 
 def select_in_range_atoms(

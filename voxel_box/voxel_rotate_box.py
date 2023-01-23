@@ -6,7 +6,6 @@ import numpy as np
 from numpy import ndarray
 from tqdm import tqdm
 from typing import List, Tuple
-import matplotlib.pyplot as plt
 from Bio.PDB.NeighborSearch import NeighborSearch
 from itertools import product
 from Bio.PDB.vectors import Vector, rotmat
