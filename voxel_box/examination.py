@@ -8,24 +8,23 @@ from Bio.PDB.Polypeptide import PPBuilder, is_aa
 from typing import Tuple, List
 from collections import defaultdict
 import numpy as np
+import os
+from pathlib import Path
 
 
-def load_protein(file_name: str) -> Bio.PDB.Structure.Structure:
+def load_protein(pdb_name: str, file_path: str) -> Bio.PDB.Structure.Structure:
     """This function is used to load the protein file in format of mmCIF to the structure in Biopython.
 
     Args:
-        file_name: file name of the protein file.
+        pdb_name: PDB ID
+        file_path: file path of the protein file.
 
     Returns:
         struct: Structure of the selected protein in Biopython.
     """
-    structure_id = "3GBN"
-    filename = file_name
-
-    # parser = MMCIFParser(QUIET=1)
-    parser = PDBParser(QUIET=1)
-    struct = parser.get_structure(structure_id, filename)
-
+    os.system(f"pdb2pqr30 --ff=PARSE {file_path} {Path(file_path).parent.joinpath(pdb_name)}.pqr")
+    parser = PDBParser(QUIET=1, is_pqr=True)
+    struct = parser.get_structure(pdb_name, str(Path(file_path).parent.joinpath(pdb_name)) + ".pqr")
     return struct
 
 

@@ -206,8 +206,8 @@ def generate_selected_element_voxel(
         central_atom_coord: list of central atom coordinate after applying shift.
         vertices_coord: coordinates of 8 vertices of the box for the selected residue.
     """
-    if selected_element not in ["C", "N", "O", "S"]:
-        raise ValueError("'selected_element' has to be in the options of 'C', 'N', 'S', 'O'")
+    if selected_element not in ["C", "N", "O", "S", "H"]:
+        raise ValueError("'selected_element' has to be in the options of 'C', 'N', 'S', 'O', 'H'")
 
     # 1. create True False voxel.
     voxels_bool = (np.ones((num_of_voxels, num_of_voxels, num_of_voxels)) == 0).astype(bool)
@@ -215,7 +215,7 @@ def generate_selected_element_voxel(
     # 2. selected corresponding atoms
     selected_atom_list = []
     for atom in voxel_atom_list:
-        if atom.element == selected_element and atom.element in ["C", "N", "O", "S"]:
+        if atom.element == selected_element and atom.element in ["C", "N", "O", "S", "H"]:
             selected_atom_list.append(atom)
 
     # 3. Generate the coordinates of 20 * 20 * 20 voxels,
@@ -246,7 +246,7 @@ def add_atom_to_voxel(
         voxels_bool: voxel filled in new bool values.
     """
 
-    radius_table = {"C": 0.70, "N": 0.65, "O": 0.60, "S": 1.00}
+    radius_table = {"C": 0.70, "N": 0.65, "O": 0.60, "S": 1.00, "H": 0.25}
     dists_element_voxels_coords = np.sqrt(np.sum((sub_voxel_centre_coords - atom_coord) ** 2, axis=-1))
     # (20, 20, 20)
     add_bool = np.where(dists_element_voxels_coords < radius_table[atom.element])
@@ -261,8 +261,9 @@ def add_atom_to_voxel(
 def main():
     """The main function of generating voxels."""
     # 0. Load protein structure
-    structure_name = "3gbn.pdb"
-    struct = load_protein(structure_name)
+    pdb_name = "3gbn"
+    pdb_path = "3gbn.pdb"
+    struct = load_protein(pdb_name, pdb_path)
 
     # 1. generate atom lists for 20*20*20 voxels
     voxel_atom_lists, central_atom_coords, vertices_coords = generate_voxel_atom_lists(struct)
@@ -272,8 +273,8 @@ def main():
     (
         voxel_atom_list, central_atom_coord, vertices_coord
     ) = (voxel_atom_lists[example_index], central_atom_coords[example_index], vertices_coords[example_index])
-    # 3. iterate through ["C", "N", "O", "S"]
-    elements = ["C", "N", "O", "S"]
+    # 3. iterate through ["C", "N", "O", "S", "H"]
+    elements = ["C", "N", "O", "S", "H"]
     all_voxel = []
     for element in elements:
         selected_element_voxel = generate_selected_element_voxel(
@@ -288,7 +289,7 @@ def main():
     box_coords_dir_path = Path.cwd().parent.joinpath("box_coords")
     if not box_coords_dir_path.exists():
         box_coords_dir_path.mkdir()
-    structure_box_coords_path = box_coords_dir_path.joinpath(Path(structure_name).stem + ".npy")
+    structure_box_coords_path = box_coords_dir_path.joinpath(Path(pdb_name).stem + ".npy")
     np.save(str(structure_box_coords_path), vertices_coords)
 
 

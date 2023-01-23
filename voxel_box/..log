@@ -1,0 +1,81 @@
+2023-01-23 12:55:52,049 INFO:main.py:243:print_splash_screen:PDB2PQR v3.4.1: biomolecular structure conversion software.
+2023-01-23 12:55:52,049 INFO:main.py:245:print_splash_screen:Please cite:  Jurrus E, et al.  Improvements to the APBS biomolecular solvation software suite.  Protein Sci 27 112-128 (2018).
+2023-01-23 12:55:52,049 INFO:main.py:245:print_splash_screen:Please cite:  Dolinsky TJ, et al.  PDB2PQR: expanding and upgrading automated preparation of biomolecular structures for molecular simulations. Nucleic Acids Res 35 W522-W525 (2007).
+2023-01-23 12:55:52,049 INFO:main.py:750:main_driver:Checking and transforming input arguments.
+2023-01-23 12:55:52,050 INFO:main.py:754:main_driver:Loading topology files.
+2023-01-23 12:55:52,090 INFO:main.py:756:main_driver:Loading molecule: 3gbn.pdb
+2023-01-23 12:55:52,111 INFO:main.py:761:main_driver:Setting up molecule.
+2023-01-23 12:55:52,137 INFO:main.py:411:setup_molecule:Created biomolecule object with 1121 residues and 6591 atoms.
+2023-01-23 12:55:52,137 WARNING:main.py:421:setup_molecule:Multiple occupancies found: N in ASN A 33.
+2023-01-23 12:55:52,137 WARNING:main.py:421:setup_molecule:Multiple occupancies found: CA in ASN A 33.
+2023-01-23 12:55:52,137 WARNING:main.py:421:setup_molecule:Multiple occupancies found: C in ASN A 33.
+2023-01-23 12:55:52,137 WARNING:main.py:421:setup_molecule:Multiple occupancies found: O in ASN A 33.
+2023-01-23 12:55:52,137 WARNING:main.py:421:setup_molecule:Multiple occupancies found: CB in ASN A 33.
+2023-01-23 12:55:52,137 WARNING:main.py:421:setup_molecule:Multiple occupancies found: CG in ASN A 33.
+2023-01-23 12:55:52,137 WARNING:main.py:421:setup_molecule:Multiple occupancies found: OD1 in ASN A 33.
+2023-01-23 12:55:52,137 WARNING:main.py:421:setup_molecule:Multiple occupancies found: ND2 in ASN A 33.
+2023-01-23 12:55:52,137 WARNING:main.py:427:setup_molecule:Multiple occupancies found in ASN A 33. At least one of the instances is being ignored.
+2023-01-23 12:55:52,137 WARNING:main.py:421:setup_molecule:Multiple occupancies found: N in GLN A 60.
+2023-01-23 12:55:52,137 WARNING:main.py:421:setup_molecule:Multiple occupancies found: CA in GLN A 60.
+2023-01-23 12:55:52,137 WARNING:main.py:421:setup_molecule:Multiple occupancies found: C in GLN A 60.
+2023-01-23 12:55:52,137 WARNING:main.py:421:setup_molecule:Multiple occupancies found: O in GLN A 60.
+2023-01-23 12:55:52,137 WARNING:main.py:421:setup_molecule:Multiple occupancies found: CB in GLN A 60.
+2023-01-23 12:55:52,137 WARNING:main.py:421:setup_molecule:Multiple occupancies found: CG in GLN A 60.
+2023-01-23 12:55:52,137 WARNING:main.py:421:setup_molecule:Multiple occupancies found: CD in GLN A 60.
+2023-01-23 12:55:52,137 WARNING:main.py:421:setup_molecule:Multiple occupancies found: OE1 in GLN A 60.
+2023-01-23 12:55:52,137 WARNING:main.py:421:setup_molecule:Multiple occupancies found: NE2 in GLN A 60.
+2023-01-23 12:55:52,137 WARNING:main.py:427:setup_molecule:Multiple occupancies found in GLN A 60. At least one of the instances is being ignored.
+2023-01-23 12:55:52,137 WARNING:main.py:421:setup_molecule:Multiple occupancies found: CA in ASN B 43.
+2023-01-23 12:55:52,137 WARNING:main.py:421:setup_molecule:Multiple occupancies found: CB in ASN B 43.
+2023-01-23 12:55:52,137 WARNING:main.py:421:setup_molecule:Multiple occupancies found: CG in ASN B 43.
+2023-01-23 12:55:52,137 WARNING:main.py:421:setup_molecule:Multiple occupancies found: OD1 in ASN B 43.
+2023-01-23 12:55:52,137 WARNING:main.py:421:setup_molecule:Multiple occupancies found: ND2 in ASN B 43.
+2023-01-23 12:55:52,137 WARNING:main.py:427:setup_molecule:Multiple occupancies found in ASN B 43. At least one of the instances is being ignored.
+2023-01-23 12:55:52,137 WARNING:main.py:421:setup_molecule:Multiple occupancies found: CA in ASN B 60.
+2023-01-23 12:55:52,137 WARNING:main.py:421:setup_molecule:Multiple occupancies found: CB in ASN B 60.
+2023-01-23 12:55:52,137 WARNING:main.py:421:setup_molecule:Multiple occupancies found: CG in ASN B 60.
+2023-01-23 12:55:52,137 WARNING:main.py:421:setup_molecule:Multiple occupancies found: OD1 in ASN B 60.
+2023-01-23 12:55:52,137 WARNING:main.py:421:setup_molecule:Multiple occupancies found: ND2 in ASN B 60.
+2023-01-23 12:55:52,137 WARNING:main.py:427:setup_molecule:Multiple occupancies found in ASN B 60. At least one of the instances is being ignored.
+2023-01-23 12:55:52,138 INFO:main.py:765:main_driver:Setting termini states for biomolecule chains.
+2023-01-23 12:55:52,148 WARNING:biomolecule.py:599:update_bonds:Gap in backbone detected between LEU H 124 and GLY H 141!
+2023-01-23 12:55:52,149 WARNING:biomolecule.py:599:update_bonds:Gap in backbone detected between THR H 153 and THR H 173!
+2023-01-23 12:55:52,149 WARNING:biomolecule.py:599:update_bonds:Gap in backbone detected between SER H 180 and SER H 182!
+2023-01-23 12:55:52,149 WARNING:biomolecule.py:599:update_bonds:Gap in backbone detected between SER L 9 and VAL L 11!
+2023-01-23 12:55:52,149 WARNING:biomolecule.py:599:update_bonds:Gap in backbone detected between LEU L 106A and GLU L 123!
+2023-01-23 12:55:52,149 WARNING:biomolecule.py:599:update_bonds:Gap in backbone detected between TYR L 140 and GLY L 158!
+2023-01-23 12:55:52,149 WARNING:biomolecule.py:599:update_bonds:Gap in backbone detected between SER L 168 and ASN L 170!
+2023-01-23 12:55:52,149 WARNING:biomolecule.py:599:update_bonds:Gap in backbone detected between SER L 180 and CYS L 194!
+2023-01-23 12:55:52,149 INFO:main.py:604:non_trivial:Loading forcefield.
+2023-01-23 12:55:52,156 INFO:main.py:608:non_trivial:Loading hydrogen topology definitions.
+2023-01-23 12:55:52,163 INFO:main.py:618:non_trivial:Attempting to repair 107 missing atoms in biomolecule.
+2023-01-23 12:55:52,178 INFO:main.py:623:non_trivial:Updating disulfide bridges.
+2023-01-23 12:55:52,180 INFO:main.py:626:non_trivial:Debumping biomolecule.
+2023-01-23 12:55:52,351 INFO:main.py:643:non_trivial:Adding hydrogens to biomolecule.
+2023-01-23 12:55:52,865 INFO:main.py:646:non_trivial:Debumping biomolecule (again).
+2023-01-23 12:55:53,594 INFO:main.py:648:non_trivial:Optimizing hydrogen bonds
+2023-01-23 12:55:53,988 WARNING:structures.py:626:try_acceptor:The best donorH was not picked (BUG?).
+2023-01-23 12:55:53,988 WARNING:structures.py:626:try_acceptor:The best donorH was not picked (BUG?).
+2023-01-23 12:55:53,992 WARNING:structures.py:626:try_acceptor:The best donorH was not picked (BUG?).
+2023-01-23 12:55:53,996 WARNING:structures.py:626:try_acceptor:The best donorH was not picked (BUG?).
+2023-01-23 12:55:53,996 WARNING:structures.py:626:try_acceptor:The best donorH was not picked (BUG?).
+2023-01-23 12:55:54,003 WARNING:structures.py:626:try_acceptor:The best donorH was not picked (BUG?).
+2023-01-23 12:55:54,006 WARNING:structures.py:626:try_acceptor:The best donorH was not picked (BUG?).
+2023-01-23 12:55:54,008 WARNING:structures.py:626:try_acceptor:The best donorH was not picked (BUG?).
+2023-01-23 12:55:54,052 WARNING:structures.py:626:try_acceptor:The best donorH was not picked (BUG?).
+2023-01-23 12:55:54,130 WARNING:io.py:40:filter:Suppressing further "The best donorH was not picked" messages
+2023-01-23 12:55:54,176 WARNING:debump.py:354:get_closest_atom:Skipped atom during water optimization: H1 in HOH B 321 skipped when optimizing H2 in HOH A 350
+2023-01-23 12:55:54,187 WARNING:debump.py:354:get_closest_atom:Skipped atom during water optimization: H1 in HOH B 321 skipped when optimizing H2 in HOH A 350
+2023-01-23 12:55:54,188 WARNING:debump.py:354:get_closest_atom:Skipped atom during water optimization: H1 in HOH B 321 skipped when optimizing H2 in HOH A 350
+2023-01-23 12:55:54,188 WARNING:debump.py:354:get_closest_atom:Skipped atom during water optimization: H1 in HOH B 209 skipped when optimizing H2 in HOH B 321
+2023-01-23 12:55:54,189 WARNING:debump.py:354:get_closest_atom:Skipped atom during water optimization: H1 in HOH B 209 skipped when optimizing H2 in HOH B 321
+2023-01-23 12:55:54,189 WARNING:debump.py:354:get_closest_atom:Skipped atom during water optimization: H1 in HOH B 209 skipped when optimizing H2 in HOH B 321
+2023-01-23 12:55:54,190 WARNING:debump.py:354:get_closest_atom:Skipped atom during water optimization: H1 in HOH B 209 skipped when optimizing H2 in HOH B 321
+2023-01-23 12:55:54,190 WARNING:debump.py:354:get_closest_atom:Skipped atom during water optimization: H1 in HOH B 322 skipped when optimizing H2 in HOH B 321
+2023-01-23 12:55:54,191 WARNING:debump.py:354:get_closest_atom:Skipped atom during water optimization: H1 in HOH B 322 skipped when optimizing H2 in HOH B 321
+2023-01-23 12:55:54,191 WARNING:io.py:40:filter:Suppressing further "Skipped atom during water optimization" messages
+2023-01-23 12:55:57,176 INFO:main.py:660:non_trivial:Applying force field to biomolecule states.
+2023-01-23 12:55:57,183 INFO:main.py:704:non_trivial:Regenerating headers.
+2023-01-23 12:55:57,185 INFO:main.py:729:non_trivial:Regenerating PDB lines.
+2023-01-23 12:55:57,225 WARNING:main.py:314:print_pqr:Ignoring 4986 header lines in output.
+2023-01-23 12:55:57,226 WARNING:main.py:318:print_pqr:Ignoring 131 missing lines in output.

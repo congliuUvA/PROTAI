@@ -54,10 +54,11 @@ def generate_central_atoms(struct: Bio.PDB.Structure.Structure) -> Tuple[List, L
                 cb_list.append(atom)
 
     # sampling
+    np.random.seed(0)
     ca_sample, cb_sample = [], []
     num_res = len(ca_list)
-    sample_num = max(num_res // 2, 100)
-    sample_index = np.random.randint((0, num_res-1), sample_num)
+    sample_num = min(num_res // 2, 100)
+    sample_index = np.random.randint(0, num_res-1, sample_num)
     for index in sample_index:
         ca_sample.append(ca_list[index])
         cb_sample.append(cb_list[index])
@@ -170,8 +171,8 @@ def generate_selected_element_voxel(
         rot_mat: rotation matrix for the selected residue.
         central_atom_coord: list of central atom coordinate after applying shift.
     """
-    if selected_element not in ["C", "N", "O", "S"]:
-        raise ValueError("'selected_element' has to be in the options of 'C', 'N', 'S', 'O'")
+    if selected_element not in ["C", "N", "O", "S", "H"]:
+        raise ValueError("'selected_element' has to be in the options of 'C', 'N', 'S', 'O', 'H'")
 
     # 1. create True False voxel.
     voxels_bool = (np.ones((num_of_voxels, num_of_voxels, num_of_voxels)) == 0).astype(bool)
@@ -179,7 +180,7 @@ def generate_selected_element_voxel(
     # 2. selected corresponding atoms
     selected_atom_list = []
     for atom in voxel_atom_list:
-        if atom.element == selected_element and atom.element in ["C", "N", "O", "S"]:
+        if atom.element == selected_element and atom.element in ["C", "N", "O", "S", "H"]:
             selected_atom_list.append(atom)
 
     # 3. Generate the coordinates of 20 * 20 * 20 voxels,
@@ -231,19 +232,13 @@ def add_atom_to_voxel(
         voxels_bool: voxel filled in new bool values.
     """
 
-    radius_table = {"C": 0.70, "N": 0.65, "O": 0.60, "S": 1.00}
+    radius_table = {"C": 0.70, "N": 0.65, "O": 0.60, "S": 1.00, "H": 0.25}
 
     dists_element_voxels_coords = np.sqrt(np.sum((voxels_coords - atom_coord) ** 2, axis=-1))
     # (20, 20, 20)
     contact_element_voxel_coords = np.where(dists_element_voxels_coords < radius_table[atom.element])
     add_bool = contact_element_voxel_coords
     voxels_bool[add_bool[0].T, add_bool[1].T, add_bool[2].T] = True
-
-    # (20, 20, 20, 8)
-    # only care about the previous three arrays, which represent the coordinate the of voxels, for the last array, it
-    # represents the index of the vertex that has been occupied.
-    # add_bool = np.unique(np.array(contact_element_voxel_coords)[:-1].T, axis=0)  # (3, number_of_occupied_voxel)
-    # voxels_bool[add_bool[0].T, add_bool[1].T, add_bool[2].T] = True
 
     return voxels_bool
 
@@ -253,12 +248,13 @@ def visualize_voxels(voxel_list: List):
     Args:
         voxel_list: a list include all voxels of 4 channels.
     """
-    voxelarray = voxel_list[0] | voxel_list[1] | voxel_list[2] | voxel_list[3]
+    voxelarray = voxel_list[0] | voxel_list[1] | voxel_list[2] | voxel_list[3] | voxel_list[4]
     colors = np.empty(voxelarray.shape, dtype=object)
     colors[voxel_list[0]] = "green"
     colors[voxel_list[1]] = "blue"
     colors[voxel_list[2]] = "red"
     colors[voxel_list[3]] = "yellow"
+    colors[voxel_list[4]] = "purple"
     ax = plt.figure().add_subplot(projection='3d')
     ax.voxels(voxelarray, facecolors=colors, edgecolor='k')
     plt.show()
@@ -267,19 +263,21 @@ def visualize_voxels(voxel_list: List):
 def main():
     """The main function of generating voxels."""
     # 0. Load protein structure
-    struct = load_protein("3gbn.pdb")
+    pdb_name = "3gbn"
+    pdb_path = "3gbn.pdb"
+    struct = load_protein(pdb_name, pdb_path)
 
     # 1. generate atom lists for 20*20*20 voxels
     voxel_atom_lists, rot_mats, central_atom_coords = generate_voxel_atom_lists(struct)  # (num_ca, num_atoms_in_voxel)
 
     # 2. take one voxel as an example.
-    example_index = -1
+    example_index = 0
     (
         voxel_atom_list, rot_mat, central_atom_coord
     ) = (voxel_atom_lists[example_index], rot_mats[example_index], central_atom_coords[example_index])
 
-    # 3. iterate through ["C", "N", "O", "S"]
-    elements = ["C", "N", "O", "S"]
+    # 3. iterate through ["C", "N", "O", "S", "H"]
+    elements = ["C", "N", "O", "S", "H"]
 
     all_voxel = []
     for element in elements:
