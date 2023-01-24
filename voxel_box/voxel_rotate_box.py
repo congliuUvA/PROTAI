@@ -10,7 +10,7 @@ from Bio.PDB.NeighborSearch import NeighborSearch
 from itertools import product
 from Bio.PDB.vectors import Vector, rotmat
 from pathlib import Path
-from voxel_rotate_atom import generate_central_atoms, visualize_voxels
+from voxel_rotate_atom import generate_central_atoms, visualize_voxels, cal_sasa
 import argparse
 import freesasa
 
@@ -198,12 +198,13 @@ def generate_cubic_centre_coords(vertices_coord: np.array) -> np.array:
 
 
 def generate_selected_element_voxel(
-        elements_list: List, selected_element: str, voxel_atom_list: List,
+        arguments, elements_list: List, selected_element: str, voxel_atom_list: List,
         central_atom_coord: np.array, vertices_coord: np.array, sasa_results: freesasa.Result,
 ):
     """This function generate selected-element voxel by inserting True/False to 20*20*20 voxel.
 
     Args:
+        arguments: arguments of the user.
         elements_list: elements that are in interets.
         selected_element: selected element for one single channel, "C", "N", "O", "S".
         voxel_atom_list: The pre-generated voxel list containing central CA atoms and the surrounding atoms.
@@ -231,12 +232,13 @@ def generate_selected_element_voxel(
     # 4. Add atom to the voxel.
     for atom in selected_atom_list:
         voxels_bool, partial_charges, sasa = add_atom_to_voxel(
-            atom, atom.coord, sub_voxel_centre_coords, voxels_bool, partial_charges, sasa_results, sasa
+            arguments, atom, atom.coord, sub_voxel_centre_coords, voxels_bool, partial_charges, sasa_results, sasa
         )
     return voxels_bool, partial_charges, sasa
 
 
 def add_atom_to_voxel(
+        arguments,
         atom: Bio.PDB.Atom.Atom,
         atom_coord: np.array,
         sub_voxel_centre_coords: ndarray,
@@ -248,8 +250,9 @@ def add_atom_to_voxel(
     """This function adds atom to the corresponding location of the voxel.
 
     Args:
-        atom: atom object to be added
-        atom_coord: atom coordinate of atom to be added
+        arguments: arguments of the user.
+        atom: atom object to be added.
+        atom_coord: atom coordinate of atom to be added.
         sub_voxel_centre_coords: coordinates of the 20*20*20 voxels.
         voxels_bool: voxel array in bool.
         partial_charges: partial_charge channel, 20*20*20 array.
@@ -258,7 +261,7 @@ def add_atom_to_voxel(
 
     Returns:
         voxels_bool: voxel filled in new bool values.
-        partial_charges: filled partial charge channel, 20*20*20 array
+        partial_charges: filled partial charge channel, 20*20*20 array.
         sasa: solvent accessible surface area array.
     """
 
@@ -267,8 +270,10 @@ def add_atom_to_voxel(
     # (20, 20, 20)
     add_bool = np.where(dists_element_voxels_coords < radius_table[atom.element])
     voxels_bool[add_bool[0].T, add_bool[1].T, add_bool[2].T] = True
-    partial_charges[add_bool[0].T, add_bool[1].T, add_bool[2].T] = atom.occupancy
-    sasa[add_bool[0].T, add_bool[1].T, add_bool[2].T] = sasa_results.atomArea(atom.get_serial_number()-1)
+    if arguments.add_partial_charge:
+        partial_charges[add_bool[0].T, add_bool[1].T, add_bool[2].T] = atom.occupancy
+    if arguments.add_sasa:
+        sasa[add_bool[0].T, add_bool[1].T, add_bool[2].T] = sasa_results.atomArea(atom.get_serial_number()-1)
 
     return voxels_bool, partial_charges, sasa
 
@@ -291,25 +296,15 @@ def main(arguments):
     # 3. iterate through ["C", "N", "O", "S", "H"]
     elements_list = ["C", "N", "O", "S", "H"] if arguments.addH else ["C", "N", "O", "S"]
 
-    # calculate sasa
-    all_radiis = []
-    all_coords = [atom.coord for atom in struct.get_atoms()]
-
-    # requiring b_factor (b_factor cannot be obtained by atom.bfactor due to the biopython reason)
-    pqr2pdb_file_path = pdb_name + "_pqr.pdb"
-    with open(pqr2pdb_file_path, "r") as f:
-        for line in f.readlines():
-            content = line.split()
-            if len(content) > 1:
-                all_radiis.append(float(content[-2]))
-
-    sasa_results = freesasa.calcCoord(np.array(all_coords).flatten(), all_radiis)
+    # calculate sasa results
+    sasa_results = cal_sasa(struct, pdb_name) if arguments.add_sasa else None
 
     all_voxel = []
     all_partial_charges = []
     all_sasa = []
     for element in elements_list:
         selected_element_voxel, partial_charges, sasa = generate_selected_element_voxel(
+            arguments,
             elements_list,
             element,
             voxel_atom_list,
@@ -332,13 +327,22 @@ def main(arguments):
     np.save(str(structure_box_coords_path), vertices_coords)
 
     # 6. store voxel, partial_charges and sasa as file format xxx
-    raise NotImplementedError("Store files!")
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='generation voxels for pdb files')
+    parser = argparse.ArgumentParser(
+        description='generation voxels for pdb files,'
+                    '4 channels for each (20*20*20, 1 voxel = 0.8 angstrom) voxel box, C, O, N, S,\n'
+                    'set --addH to True to add the fifth channel H\n'
+                    'set --add_partial_charge to True to add partial charge feature\n'
+                    'set --add solvent accessible surface area to True to add sasa feature\n'
+                    'If all args are set to True, then seven features are generate for one box.'
+    )
     parser.add_argument('--addH', type=bool, default=False, help='Add hydrogen to pdb file.')
-    parser.add_argument('--add_partial_charge', type=bool, default=False, help='Add partial charge channel.')
+    parser.add_argument('--add_partial_charges', type=bool,
+                        default=False, help='Add partial charge channel for each atom.')
+    parser.add_argument('--add_sasa', type=bool,
+                        default=False, help='Add feature solvent accessible surface area for each of the atom.')
     args = parser.parse_args()
 
     main(args)
