@@ -1,6 +1,6 @@
 """This module is for voxel box generation."""
 
-from examination import load_protein
+from biopython_utils import load_protein
 import Bio
 import numpy as np
 from numpy import ndarray
@@ -57,10 +57,6 @@ def is_in_range(vertices_coords: np.array, atom: Bio.PDB.Atom.Atom, center_coord
     in_range = (abs(atom_center_vector @ x_vector) * 2 < length_of_box) and \
                (abs(atom_center_vector @ y_vector) * 2 < length_of_box) and \
                (abs(atom_center_vector @ z_vector) * 2 < length_of_box)
-
-    # xyz_mat = np.array([x_vector, y_vector, z_vector])
-    # xyz_mat = xyz_mat / np.linalg.norm(xyz_mat, axis=1)
-    # in_range = np.all(xyz_mat@atom_center_vector * 2 < length_of_box)
 
     return in_range
 

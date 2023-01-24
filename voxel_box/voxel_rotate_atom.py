@@ -1,6 +1,6 @@
 """This module is for voxel box generation."""
 
-from examination import load_protein
+from biopython_utils import load_protein
 import Bio
 import numpy as np
 from numpy import ndarray
@@ -55,6 +55,9 @@ def generate_central_atoms(struct: Bio.PDB.Structure.Structure) -> Tuple[List, L
             if atom.get_name() == "CB":
                 cb_list.append(atom)
 
+    for atom in ca_list:
+        print(atom.parent.get_resname())
+
     # # sampling, no need to do sample because files are mixed up in one batch.
     # np.random.seed(42)
     # ca_sample, cb_sample = [], []
@@ -104,7 +107,7 @@ def select_in_range_atoms(
     central_atom_coords = []
 
     # searching for atoms that are within the range
-    for central_atom, ca_cb_vector in tqdm(zip(central_atom_list, ca_cb_vectors), total=len(ca_cb_vectors)):
+    for central_atom, ca_cb_vector in zip(central_atom_list, ca_cb_vectors):
         # the first atom in the voxel is the central atom.
         voxel_atom_list = [central_atom]
 
@@ -130,6 +133,7 @@ def select_in_range_atoms(
             if range_x[0] < atom_x < range_x[1] and \
                     range_y[0] < atom_y < range_y[1] and \
                     range_z[0] < atom_z < range_z[1]:
+                # Do not contain central residue in the box.
                 if atom != central_atom and atom.parent != central_atom.parent:
                     voxel_atom_list.append(atom)
 
@@ -188,7 +192,8 @@ def generate_selected_element_voxel(
 
     # 2. selected corresponding atoms
     selected_atom_list = []
-    for atom in voxel_atom_list:
+    # the first atom in voxel_atom_list is the central atom
+    for atom in voxel_atom_list[1:]:
         if atom.element == selected_element and atom.element in elements_list:
             selected_atom_list.append(atom)
 
@@ -319,41 +324,48 @@ def main(arguments):
     pdb_name = "3gbn"
     pdb_path = "3gbn.pdb"
     struct = load_protein(arguments, pdb_name, pdb_path)
-    # 1. generate atom lists for 20*20*20 voxels
+    # 1. generate atom lists for 20*20*20 voxels, num_of_residue in pdb file in total.
     voxel_atom_lists, rot_mats, central_atom_coords = generate_voxel_atom_lists(struct)  # (num_ca, num_atoms_in_voxel)
 
-    # 2. take one voxel as an example.
-    example_index = 0
-    (
-        voxel_atom_list, rot_mat, central_atom_coord
-    ) = (voxel_atom_lists[example_index], rot_mats[example_index], central_atom_coords[example_index])
+    for voxel_atom_list, rot_mat, central_atom_coord in tqdm(
+            zip(voxel_atom_lists, rot_mats, central_atom_coords), total=len(voxel_atom_lists)
+    ):
+        # take out the central atom
+        central_atom = voxel_atom_list[0]
 
-    # 3. iterate through ["C", "N", "O", "S", "H"]
-    elements_list = ["C", "N", "O", "S", "H"] if arguments.addH else ["C", "N", "O", "S"]
+        # 2. iterate through ["C", "N", "O", "S", "H"]
+        elements_list = ["C", "N", "O", "S", "H"] if arguments.addH else ["C", "N", "O", "S"]
 
-    # calculate sasa
-    sasa_results = cal_sasa(struct, pdb_name) if arguments.add_sasa else None
+        # calculate sasa
+        sasa_results = cal_sasa(struct, pdb_name) if arguments.add_sasa else None
 
-    all_voxel = []
-    all_partial_charges = []
-    all_sasa = []
-    for element in elements_list:
-        selected_element_voxel, partial_charges, sasa, = generate_selected_element_voxel(
-            arguments,
-            elements_list,
-            element,
-            voxel_atom_list,
-            rot_mat,
-            central_atom_coord,
-            sasa_results,
-        )
-        all_voxel.append(selected_element_voxel)
-        all_partial_charges.append(partial_charges)
-        all_sasa.append(sasa)
-    # 4. visualization
-    visualize_voxels(arguments, all_voxel)
+        all_voxel = []
+        all_partial_charges = []
+        all_sasa = []
+        for element in elements_list:
+            selected_element_voxel, partial_charges, sasa, = generate_selected_element_voxel(
+                arguments,
+                elements_list,
+                element,
+                voxel_atom_list,
+                rot_mat,
+                central_atom_coord,
+                sasa_results,
+            )
+            all_voxel.append(selected_element_voxel)
+            all_partial_charges.append(partial_charges)
+            all_sasa.append(sasa)
 
-    # 5. store voxel, partial_charges and sasa as file format xxx
+        # # 4. visualization
+        # visualize_voxels(arguments, all_voxel)
+
+        # 5. store voxel, partial_charges and sasa as file format of hdf5
+        # binary voxel box for 4 channels
+        voxel_per_residue = np.array(all_voxel)  # (4, 20, 20, 20)
+        # metadata
+        pdb_id = pdb_name
+        chain_id = central_atom.parent.parent.id
+        residue_name = central_atom.parent.get_resname()
 
 
 if __name__ == "__main__":
