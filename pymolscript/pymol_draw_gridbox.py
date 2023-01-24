@@ -2,7 +2,7 @@ from pymol.cgo import *
 import numpy as np
 
 
-def gridbox(box_coords, index, r1=0, g1=0, b1=1, trasp=0.6):
+def gridbox(box_coords, index, r1=0, g1=0, b1=1, trasp=0.2):
     """
     DESCRIPTION
     Create a box from the center coordinate of the box and the size of box
