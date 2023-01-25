@@ -380,8 +380,9 @@ def gen_voxel_binary_array(arguments, f, struct, pdb_name,
         residue_position = central_atom.coord
         residue_icode = central_atom.parent.get_full_id()[-1][-1]
 
-        # dataset creation
-        dataset = f.create_dataset(str(idx), data=voxel_per_residue, compression="lzf")
+        # chain_group creation
+        group = f.create_group(chain_id) if chain_id not in f else f[chain_id]
+        dataset = group.create_dataset(str(idx), data=voxel_per_residue, compression="lzf")
 
         # attributes generation
         dataset.attrs["pdb_id"] = pdb_id
