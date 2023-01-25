@@ -1,0 +1,4 @@
+# This configuration file is for data path configuration of hdf5 files generation.
+
+# raw data directory path of PDB files
+raw_pdb_dir: pdb_raw_files

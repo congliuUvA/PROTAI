@@ -1,3 +1,4 @@
-Data/
+pdb_raw_files/
 *.ipynb
-Slides/
+slides/
+**outputs/

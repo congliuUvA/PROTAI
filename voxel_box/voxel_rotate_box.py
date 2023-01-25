@@ -13,6 +13,8 @@ from pathlib import Path
 from voxel_rotate_atom import generate_central_atoms, visualize_voxels, cal_sasa
 import argparse
 import freesasa
+import hydra
+from omegaconf import DictConfig, OmegaConf
 
 num_of_voxels = 20
 len_of_voxel = 0.8
@@ -274,6 +276,7 @@ def add_atom_to_voxel(
     return voxels_bool, partial_charges, sasa
 
 
+@hydra.main(config_path="../config/voxel_box", config_name="voxel_box")
 def main(arguments):
     """The main function of generating voxels."""
     # 0. Load protein structure
