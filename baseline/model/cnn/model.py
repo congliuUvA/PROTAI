@@ -20,7 +20,7 @@ class CNN(nn.Module):
         self.mlp = nn.Linear(400*3**3, num_classes)
         self.softmax = nn.functional.softmax
 
-    def forward(self, x: tensor):
+    def forward(self, x: tensor) -> tensor:
         """Forward function of 3DCNN.
 
         Args:
