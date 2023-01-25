@@ -2,9 +2,8 @@
 import hydra
 from omegaconf import DictConfig
 from pathlib import Path
-import gzip
-import shutil
-from voxel_box.voxel_rotate_atom import gen_voxel_box_file
+from voxel_rotate_atom import gen_voxel_box_file
+import os
 
 
 @hydra.main(version_base=None, config_path="../config", config_name="config")
@@ -26,16 +25,17 @@ def data_gen(args: DictConfig):
     args_voxel_box.hdf5_file_dir = str(hdf5_file_dir)
 
     for pdb in raw_pdb_dir.rglob("*.gz"):
-        # unzip gz file
-        with gzip.open(pdb, 'rb') as f_in:
-            pdb_unzip = ".".join(str(pdb).split(".")[:-1])
-            with open(pdb_unzip, 'wb') as f_out:
-                shutil.copyfileobj(f_in, f_out)
+        # unzipped pdb file name
+        pdb_id = pdb.name.split(".")[0]
+        if (hdf5_file_dir.joinpath(pdb_id + ".hdf5")).exists():
+            continue
+        pdb_unzip = ".".join(str(pdb).split(".")[:-1])
+        os.system("gunzip --keep -f " + str(pdb))
+
         # assign pdb info to args_voxel_box
         args_voxel_box.pdb_name = Path(pdb_unzip).stem
         args_voxel_box.pdb_path = pdb_unzip
-        gen_voxel_box_file()
-        break
+        gen_voxel_box_file(args_voxel_box)
 
 
 if __name__ == "__main__":

@@ -1,5 +1,4 @@
 """This module is for voxel box generation."""
-
 from biopython_utils import load_protein
 import Bio
 import numpy as np
@@ -12,8 +11,6 @@ from itertools import product
 from Bio.PDB.vectors import Vector, rotmat
 import freesasa
 import h5py
-import hydra
-from omegaconf import DictConfig
 from pathlib import Path
 
 num_of_voxels = 20
@@ -395,8 +392,7 @@ def gen_voxel_binary_array(arguments, f, struct, pdb_name,
         dataset.attrs["residue_icode"] = residue_icode
 
 
-@hydra.main(version_base=None, config_path="../config/voxel_box", config_name="voxel_box")
-def gen_voxel_box_file(arguments: DictConfig):
+def gen_voxel_box_file(arguments):
     """The main function of generating voxels.
 
     Args:
@@ -410,7 +406,7 @@ def gen_voxel_box_file(arguments: DictConfig):
     struct = load_protein(arguments, pdb_name, pdb_path)
 
     # start a hdf5 file
-    f = h5py.File(arguments.hdf5_file_dir + pdb_name + ".hdf5", "w")
+    f = h5py.File(str(Path(arguments.hdf5_file_dir) / pdb_name) + ".hdf5", "w")
 
     # generate atom lists for 20*20*20 voxels, num_of_residue in pdb file in total.
     voxel_atom_lists, rot_mats, central_atom_coords = generate_voxel_atom_lists(struct)  # (num_ca, num_atoms_in_voxel)
@@ -418,7 +414,3 @@ def gen_voxel_box_file(arguments: DictConfig):
     gen_voxel_binary_array(arguments, f, struct, pdb_name, voxel_atom_lists, rot_mats, central_atom_coords)
 
     f.close()
-
-
-if __name__ == "__main__":
-    gen_voxel_box_file()
