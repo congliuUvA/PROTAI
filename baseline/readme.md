@@ -42,8 +42,8 @@ The layout inside one specific PDBx.hdf5 is:
 
 
 To generate all hdf5 file, run the command line         
-`cd voxel_box`      
-`python data_gen.py`
+`$ cd voxel_box`      
+`$ python data_gen.py`
 
 
 
