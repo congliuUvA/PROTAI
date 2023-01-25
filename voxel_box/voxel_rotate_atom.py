@@ -10,8 +10,11 @@ import matplotlib.pyplot as plt
 from Bio.PDB.NeighborSearch import NeighborSearch
 from itertools import product
 from Bio.PDB.vectors import Vector, rotmat
-import argparse
 import freesasa
+import h5py
+import hydra
+from omegaconf import DictConfig
+from pathlib import Path
 
 num_of_voxels = 20
 len_of_voxel = 0.8
@@ -55,8 +58,14 @@ def generate_central_atoms(struct: Bio.PDB.Structure.Structure) -> Tuple[List, L
             if atom.get_name() == "CB":
                 cb_list.append(atom)
 
+    # examine whether all central atom come from the normal amino acids
+    atom_name = ["ALA", "ARG", "ASN", "ASP", "CYS",
+                 "GLU", "GLN", "GLY", "HIS", "ILE",
+                 "LEU", "LYS", "MET", "PHE", "PRO",
+                 "SER", "THR", "TRP", "TYR", "VAL"]
     for atom in ca_list:
-        print(atom.parent.get_resname())
+        if atom.parent.get_resname() not in atom_name:
+            raise NameError(f"{atom.parent.get_resname()} is not a valid amino acids!")
 
     # # sampling, no need to do sample because files are mixed up in one batch.
     # np.random.seed(42)
@@ -314,26 +323,29 @@ def cal_sasa(struct, pdb_name):
     return sasa_results
 
 
-def main(arguments):
-    """The main function of generating voxels.
+def gen_voxel_binary_array(arguments, f, struct, pdb_name,
+                           voxel_atom_lists: List, rot_mats: List,
+                           central_atom_coords: List):
+    """This function generates voxel binary array given the
+    selected voxel atom lists and rotation matrix and central atom coordintaes
 
     Args:
-        arguments: arguments input from user.
+        arguments: arguments of the user.
+        f: hdf5 file for the pdb
+        struct: PDB structure in biopython.
+        pdb_name: PDB ID of interest.
+        voxel_atom_lists: voxel atom lists of each voxel box. (len = num of residues in total)
+        rot_mats: rotation matrix of each voxel box. (len = num of residues in total)
+        central_atom_coords: central atom coordinates of each box.
     """
-    # 0. Load protein structure
-    pdb_name = "3gbn"
-    pdb_path = "3gbn.pdb"
-    struct = load_protein(arguments, pdb_name, pdb_path)
-    # 1. generate atom lists for 20*20*20 voxels, num_of_residue in pdb file in total.
-    voxel_atom_lists, rot_mats, central_atom_coords = generate_voxel_atom_lists(struct)  # (num_ca, num_atoms_in_voxel)
-
-    for voxel_atom_list, rot_mat, central_atom_coord in tqdm(
-            zip(voxel_atom_lists, rot_mats, central_atom_coords), total=len(voxel_atom_lists)
+    for idx, voxel_atom_list, rot_mat, central_atom_coord in tqdm(
+            zip(np.arange(len(voxel_atom_lists)), voxel_atom_lists, rot_mats, central_atom_coords),
+            total=len(voxel_atom_lists)
     ):
         # take out the central atom
         central_atom = voxel_atom_list[0]
 
-        # 2. iterate through ["C", "N", "O", "S", "H"]
+        # iterate through ["C", "N", "O", "S", "H"]
         elements_list = ["C", "N", "O", "S", "H"] if arguments.addH else ["C", "N", "O", "S"]
 
         # calculate sasa
@@ -356,32 +368,57 @@ def main(arguments):
             all_partial_charges.append(partial_charges)
             all_sasa.append(sasa)
 
-        # # 4. visualization
+        # visualization
         # visualize_voxels(arguments, all_voxel)
 
-        # 5. store voxel, partial_charges and sasa as file format of hdf5
+        # store voxel, partial_charges and sasa as file format of hdf5
         # binary voxel box for 4 channels
-        voxel_per_residue = np.array(all_voxel)  # (4, 20, 20, 20)
+        voxel_per_residue = np.array(all_voxel, dtype=np.bool_)  # (4, 20, 20, 20)
+
         # metadata
-        pdb_id = pdb_name
+        pdb_id = central_atom.parent.get_full_id()[0]
         chain_id = central_atom.parent.parent.id
         residue_name = central_atom.parent.get_resname()
+        residue_serial_number = central_atom.parent.get_full_id()[-1][-2]
+        residue_position = central_atom.coord
+        residue_icode = central_atom.parent.get_full_id()[-1][-1]
+
+        # dataset creation
+        dataset = f.create_dataset(str(idx), data=voxel_per_residue, compression="lzf")
+
+        # attributes generation
+        dataset.attrs["pdb_id"] = pdb_id
+        dataset.attrs["chain_id"] = chain_id
+        dataset.attrs["residue_name"] = residue_name
+        dataset.attrs["residue_serial_number"] = residue_serial_number
+        dataset.attrs["residue_position"] = residue_position
+        dataset.attrs["residue_icode"] = residue_icode
+
+
+@hydra.main(version_base=None, config_path="../config/voxel_box", config_name="voxel_box")
+def gen_voxel_box_file(arguments: DictConfig):
+    """The main function of generating voxels.
+
+    Args:
+        arguments: arguments input from user.
+    """
+    # configuration set up
+    pdb_name = arguments.pdb_name
+    pdb_path = str(Path.cwd().joinpath(arguments.pdb_path))
+
+    # 0. Load protein structure
+    struct = load_protein(arguments, pdb_name, pdb_path)
+
+    # start a hdf5 file
+    f = h5py.File(arguments.hdf5_file_dir + pdb_name + ".hdf5", "w")
+
+    # generate atom lists for 20*20*20 voxels, num_of_residue in pdb file in total.
+    voxel_atom_lists, rot_mats, central_atom_coords = generate_voxel_atom_lists(struct)  # (num_ca, num_atoms_in_voxel)
+
+    gen_voxel_binary_array(arguments, f, struct, pdb_name, voxel_atom_lists, rot_mats, central_atom_coords)
+
+    f.close()
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description='generation voxels for pdb files,'
-                    '4 channels for each (20*20*20, 1 voxel = 0.8 angstrom) voxel box, C, O, N, S,\n'
-                    'set --addH to True to add the fifth channel H\n'
-                    'set --add_partial_charge to True to add partial charge feature\n'
-                    'set --add solvent accessible surface area to True to add sasa feature\n'
-                    'If all args are set to True, then seven features are generate for one box.'
-    )
-    parser.add_argument('--addH', type=bool, default=False, help='Add hydrogen to pdb file.')
-    parser.add_argument('--add_partial_charges', type=bool,
-                        default=False, help='Add partial charge channel for each atom.')
-    parser.add_argument('--add_sasa', type=bool,
-                        default=False, help='Add feature solvent accessible surface area for each of the atom.')
-    args = parser.parse_args()
-
-    main(args)
+    gen_voxel_box_file()
