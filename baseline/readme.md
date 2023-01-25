@@ -31,13 +31,13 @@ hdf5 file. All hdf5 files can be found in directory `voxel_hdf5`.The layout of t
 The layout inside one specific PDBx.hdf5 is:    
 |+-- /   
 |   +-- group_Chain_ID = "A"      
-|      +-- dataset_residue_serial_number = "1"         
-|      +-- dataset_residue_serial_number = "2"         
+|            +-- dataset_residue_serial_number = "1"         
+|            +-- dataset_residue_serial_number = "2"         
 ...         
 ...             
 |   +-- group_Chain_ID = "B"      
-|      +-- dataset_residue_serial_number = "1"         
-|          +-- dataset_residue_serial_number = "2"      
+|            +-- dataset_residue_serial_number = "1"         
+|                +-- dataset_residue_serial_number = "2"      
 ...     
 
 
