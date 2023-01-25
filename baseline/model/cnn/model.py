@@ -1,5 +1,6 @@
 """3D CNN model for voxel boxes."""
 from torch import nn, tensor
+import torch
 
 
 class CNN(nn.Module):
@@ -29,6 +30,7 @@ class CNN(nn.Module):
         x = self.relu(self.conv_layer2(x))
         x = self.max_pooling(x)
         x = self.relu(self.conv_layer3(x))
-        x = self.softmax(self.mlp(x.flatten()))
+        x = self.max_pooling(x)
+        x = self.softmax(self.mlp(x.reshape(x.shape[0], -1)), dim=-1)
         return x
 
