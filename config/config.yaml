@@ -1,4 +1,0 @@
-# This configuration file enables the default choices.
-defaults:
-  - voxel_box: voxel_box
-  - data: data
