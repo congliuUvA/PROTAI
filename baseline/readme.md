@@ -22,22 +22,22 @@ so that vector parallelized to Carbon_beta -- Carbon_alpha is `Vector(1,1,1)`.
 All voxel boxes are stored in the format of hdf5 files. Voxel boxes coming from the same PDB file are stored in the same
 hdf5 file. All hdf5 files can be found in directory `voxel_hdf5`.The layout of this directory is:   
 +-- voxel_hdf5  
-|   +-- PDB0.hdf5   
-|   +-- PDB1.hdf5   
+|       +-- PDB0.hdf5   
+|       +-- PDB1.hdf5   
 ...     
 ...         
-|   +-- PDBx.hdf5   
+|       +-- PDBx.hdf5   
 
 The layout inside one specific PDBx.hdf5 is:    
 |+-- /   
-|   +-- group_Chain_ID = "A"      
-|            +-- dataset_residue_serial_number = "1"         
-|            +-- dataset_residue_serial_number = "2"         
+|         +-- group_Chain_ID = "A"      
+|                    +-- dataset_residue_serial_number = "1"         
+|                    +-- dataset_residue_serial_number = "2"         
 ...         
 ...             
-|   +-- group_Chain_ID = "B"      
-|            +-- dataset_residue_serial_number = "1"         
-|                +-- dataset_residue_serial_number = "2"      
+|         +-- group_Chain_ID = "B"      
+|                    +-- dataset_residue_serial_number = "1"         
+|                        +-- dataset_residue_serial_number = "2"      
 ...     
 
 
