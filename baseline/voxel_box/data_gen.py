@@ -16,8 +16,12 @@ def data_gen(args: DictConfig):
     root_dir = baseline_dir.parent
     # raw pdb file path
     raw_pdb_dir = root_dir / Path(args_data.raw_pdb_dir)
+    if not raw_pdb_dir.exists():
+        raw_pdb_dir.mkdir()
+        print("Start downloading raw pdb files...")
+        os.system("sh ../../download/rsyncPDB.sh")
 
-    # create a directory for hdf5 filess
+    # create a directory for hdf5 files
     hdf5_file_dir = baseline_dir / Path("voxels_hdf5")
     hdf5_file_dir.mkdir() if not hdf5_file_dir.exists() else None
 
