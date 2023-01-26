@@ -10,7 +10,7 @@ from Bio.PDB.NeighborSearch import NeighborSearch
 from itertools import product
 from Bio.PDB.vectors import Vector, rotmat
 from pathlib import Path
-from voxel_rotate_atom import generate_central_atoms, visualize_voxels, cal_sasa
+from voxel_rotate_atom import gen_ca_cb_vectors, visualize_voxels, cal_sasa
 import argparse
 import freesasa
 import hydra
@@ -64,7 +64,7 @@ def is_in_range(vertices_coords: np.array, atom: Bio.PDB.Atom.Atom, center_coord
 
 
 def select_in_range_atoms(
-        struct, ca_list, cb_list,
+        struct, ca_list, cb_list, ca_cb_vectors,
         selected_central_atom_type="CA", shift=0
 ) -> Tuple[List, List, np.array]:
     """This function generates the selected in-range atom corresponding to the central atom ["CA", "CB"].
@@ -73,6 +73,7 @@ def select_in_range_atoms(
         struct: structure in biopython.
         ca_list: list containing CA in the PDB file.
         cb_list: list containing CB in the PDB file.
+        ca_cb_vectors: list containing ca-cb vectors.
         selected_central_atom_type: string stating which central atom is selected.
         shift: shift of carbon alpha along the diagonal direction.
 
@@ -152,9 +153,9 @@ def generate_voxel_atom_lists(struct: Bio.PDB.Structure.Structure) -> Tuple[List
         central_atom_coords: list of central atom coordinate after applying shift.
         vertices_coords: ndarray of 8 vertices coordinates of voxels. (num_of_res, (8, 3))
     """
-    ca_list, cb_list = generate_central_atoms(struct)
+    ca_list, cb_list, ca_cb_vectors = gen_ca_cb_vectors(struct)
     voxel_atom_lists, central_atom_coords, vertices_coords = select_in_range_atoms(
-        struct, ca_list, cb_list, selected_central_atom_type="CB", shift=0
+        struct, ca_list, cb_list, ca_cb_vectors, selected_central_atom_type="CB", shift=0
     )
     return voxel_atom_lists, central_atom_coords, vertices_coords
 
@@ -268,7 +269,7 @@ def add_atom_to_voxel(
     # (20, 20, 20)
     add_bool = np.where(dists_element_voxels_coords < radius_table[atom.element])
     voxels_bool[add_bool[0].T, add_bool[1].T, add_bool[2].T] = True
-    if arguments.add_partial_charge:
+    if arguments.add_partial_charges:
         partial_charges[add_bool[0].T, add_bool[1].T, add_bool[2].T] = atom.occupancy
     if arguments.add_sasa:
         sasa[add_bool[0].T, add_bool[1].T, add_bool[2].T] = sasa_results.atomArea(atom.get_serial_number()-1)
@@ -276,7 +277,7 @@ def add_atom_to_voxel(
     return voxels_bool, partial_charges, sasa
 
 
-@hydra.main(config_path="../config/voxel_box", config_name="voxel_box")
+@hydra.main(version_base=None, config_path="../config/voxel_box", config_name="voxel_box")
 def main(arguments):
     """The main function of generating voxels."""
     # 0. Load protein structure
@@ -325,23 +326,6 @@ def main(arguments):
     structure_box_coords_path = box_coords_dir_path.joinpath(Path(pdb_name).stem + ".npy")
     np.save(str(structure_box_coords_path), vertices_coords)
 
-    # 6. store voxel, partial_charges and sasa as file format xxx
-
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description='generation voxels for pdb files,'
-                    '4 channels for each (20*20*20, 1 voxel = 0.8 angstrom) voxel box, C, O, N, S,\n'
-                    'set --addH to True to add the fifth channel H\n'
-                    'set --add_partial_charge to True to add partial charge feature\n'
-                    'set --add solvent accessible surface area to True to add sasa feature\n'
-                    'If all args are set to True, then seven features are generate for one box.'
-    )
-    parser.add_argument('--addH', type=bool, default=False, help='Add hydrogen to pdb file.')
-    parser.add_argument('--add_partial_charges', type=bool,
-                        default=False, help='Add partial charge channel for each atom.')
-    parser.add_argument('--add_sasa', type=bool,
-                        default=False, help='Add feature solvent accessible surface area for each of the atom.')
-    args = parser.parse_args()
-
-    main(args)
+    main()
