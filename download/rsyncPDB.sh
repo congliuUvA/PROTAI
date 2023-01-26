@@ -108,4 +108,4 @@ PORT=33444                                                    # port RCSB PDB se
 ############################################################################
 # Rsync only the XML format coordinates  /pub/pdb/data/biounit/PDB/ (Aproximately ? GB)
 ############################################################################
-${RSYNC} -rlpt -v -z --delete --port=$PORT ${SERVER}/data/biounit/PDB/all/ $MIRRORDIR > $LOGFILE 2>/dev/null
+${RSYNC} -rlpt -v -z --delete --port=$PORT ${SERVER}/data/biounit/PDB/divided/ $MIRRORDIR > $LOGFILE 2>/dev/null
