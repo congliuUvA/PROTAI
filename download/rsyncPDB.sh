@@ -102,7 +102,7 @@ PORT=33444                                                    # port RCSB PDB se
 
 ############################################################################
 # Rsync only the XML format coordinates  /pub/pdb/data/structures/divided/XML (Aproximately 35 GB)
-############################################################################
+##########################################################################
 #${RSYNC} -rlpt -v -z --delete --port=$PORT ${SERVER}/data/structures/divided/XML/ $MIRRORDIR > $LOGFILE 2>/dev/null
 
 ############################################################################

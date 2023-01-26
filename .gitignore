@@ -4,3 +4,4 @@ slides/
 **outputs/
 voxels_hdf5/
 download/
+*.out
