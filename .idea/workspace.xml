@@ -6,9 +6,6 @@
   <component name="ChangeListManager">
     <list default="true" id="a2ed54bc-bc21-4dc4-bce6-6cf0b11d43f9" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/PROTAI.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/PROTAI.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/download/rsyncPDB.sh" beforeDir="false" afterPath="$PROJECT_DIR$/download/rsyncPDB.sh" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -114,6 +111,7 @@
       <workItem from="1674749116346" duration="11000" />
       <workItem from="1674749129333" duration="16000" />
       <workItem from="1674749231744" duration="2429000" />
+      <workItem from="1674751674510" duration="340000" />
     </task>
     <servers />
   </component>

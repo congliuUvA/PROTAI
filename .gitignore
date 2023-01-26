@@ -2,5 +2,5 @@ pdb_raw_files/
 *.ipynb
 **outputs/
 voxels_hdf5/
-**.sh
+download/
 *.out

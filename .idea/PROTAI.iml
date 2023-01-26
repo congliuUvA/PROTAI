@@ -5,6 +5,7 @@
       <excludeFolder url="file://$MODULE_DIR$/baseline/voxel_box/outputs" />
       <excludeFolder url="file://$MODULE_DIR$/baseline/voxels_hdf5" />
       <excludeFolder url="file://$MODULE_DIR$/pdb_raw_files" />
+      <excludeFolder url="file://$MODULE_DIR$/download" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
