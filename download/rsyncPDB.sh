@@ -22,8 +22,8 @@
 # You should CHANGE THE NEXT THREE LINES to suit your local setup
 ############################################################################
 
-MIRRORDIR=/Users/congliu/Desktop/UvA/PROTAI/baseline/pdb_raw_files             # your top level rsync directory
-LOGFILE=/Users/congliu/Desktop/UvA/PROTAI/baseline/pdb_raw_files/logs        # file for storing logs
+MIRRORDIR=/Users/congliu/Desktop/UvA/PROTAI/pdb_raw_files             # your top level rsync directory
+LOGFILE=/Users/congliu/Desktop/UvA/PROTAI/pdb_raw_files/logs        # file for storing logs
 RSYNC=/usr/bin/rsync                         # location of local rsync
 
 ##########################################################################################
