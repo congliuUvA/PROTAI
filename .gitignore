@@ -1,6 +1,5 @@
 pdb_raw_files/
 *.ipynb
-slides/
 **outputs/
 voxels_hdf5/
 download/
