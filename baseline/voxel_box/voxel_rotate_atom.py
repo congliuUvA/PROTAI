@@ -8,7 +8,8 @@ from typing import List, Tuple
 import matplotlib.pyplot as plt
 from Bio.PDB.NeighborSearch import NeighborSearch
 from itertools import product
-from Bio.PDB.vectors import Vector, rotmat
+from Bio.PDB.vectors import Vector, rotmat, rotaxis2m
+from Bio.PDB.Atom import Atom
 import freesasa
 import h5py
 from pathlib import Path
@@ -26,34 +27,85 @@ def range_editor(coord: ndarray) -> List:
         range_list: list of x,y,z range
     """
     x, y, z = coord[0], coord[1], coord[2]
-    range_x = [x - num_of_voxels/2 * len_of_voxel, x + num_of_voxels/2 * len_of_voxel]
-    range_y = [y - num_of_voxels/2 * len_of_voxel, y + num_of_voxels/2 * len_of_voxel]
-    range_z = [z - num_of_voxels/2 * len_of_voxel, z + num_of_voxels/2 * len_of_voxel]
+    range_x = [x - num_of_voxels / 2 * len_of_voxel, x + num_of_voxels / 2 * len_of_voxel]
+    range_y = [y - num_of_voxels / 2 * len_of_voxel, y + num_of_voxels / 2 * len_of_voxel]
+    range_z = [z - num_of_voxels / 2 * len_of_voxel, z + num_of_voxels / 2 * len_of_voxel]
     range_list = [range_x, range_y, range_z]
     return range_list
 
 
-def generate_central_atoms(struct: Bio.PDB.Structure.Structure) -> Tuple[List, List]:
-    """This function generates central atom lists and their corresponding ranges.
+def cal_projected_cb_coords(c_atom, n_atom, ca_atom) -> ndarray:
+    """
+    This function calculate the projected CB coordinates by given C, N, CA in the same residue.
+    Procedure can be find in word file.
+    Args:
+        c_atom: carbon atom in biopython.
+        n_atom: nitrogen atom.
+        ca_atom: carbon alpha atom.
+    Returns:
+        cb_atom_coord: projected CB atom coordinates
+    """
+    p_vector = c_atom.coord - n_atom.coord
+    q_vector = n_atom.coord - ca_atom.coord
+    u_vector = (p_vector + q_vector) / np.linalg.norm(p_vector + q_vector)
+    r_vector = (p_vector - q_vector) / np.linalg.norm(p_vector - q_vector)
+    m = rotaxis2m(-np.pi * 125 / 360, Vector(r_vector))
+    b_vector = Vector(u_vector).left_multiply(m) / np.linalg.norm(Vector(u_vector).left_multiply(m))
+    cb_atom_coord = b_vector.get_array() * 1.5 + ca_atom.coord
+    return cb_atom_coord
+
+
+def gen_ca_cb_vectors(struct: Bio.PDB.Structure.Structure) -> Tuple[List, List, List]:
+    """ This function generates ca_list, cb_list and ca_cb vectors for all residues in one pbd file.
     Args:
         struct: structure in biopython.
+
     Returns:
-        ca_list
-        cb_list
+
     """
+    ca_cb_vectors = []
     ca_list, cb_list = [], []
     for res in struct.get_residues():
+        ca_atom, c_atom, n_atom, real_cb_atom = None, None, None, None
         for atom in res.get_atoms():
-            if atom.get_parent().get_resname() == "GLY":
-                if atom.get_name() == "CA":
-                    ca_list.append(atom)
-                    cb_list.append(atom)
+            if atom.get_name() == "CA": ca_atom = atom
+            if atom.get_name() == "C": c_atom = atom
+            if atom.get_name() == "N": n_atom = atom
+            if ca_atom is not None and c_atom is not None and n_atom is not None:
+                # calculate projected CB coordinates
+                cb_atom_coord = cal_projected_cb_coords(c_atom, n_atom, ca_atom)
+                ca_cb_vectors.append(Vector(ca_atom.coord - cb_atom_coord))
+
+                if res.get_resname() != "GLY":
+                    # create cb atom
+                    if atom.get_name() == "CB":
+                        real_cb_atom = atom
+                        projected_cb_atom = Atom(name="CB_fake",
+                                                 coord=cb_atom_coord,
+                                                 bfactor=real_cb_atom.bfactor,
+                                                 occupancy=real_cb_atom.occupancy,
+                                                 altloc=real_cb_atom.altloc,
+                                                 fullname=real_cb_atom.fullname,
+                                                 serial_number=real_cb_atom.serial_number,
+                                                 element="C",
+                                                 )
+                        projected_cb_atom.set_parent(res)
+                        continue
+                else:
+                    projected_cb_atom = Atom(name="CB_fake",
+                                             coord=cb_atom_coord,
+                                             bfactor=0,
+                                             occupancy=0,
+                                             altloc="",
+                                             fullname="",
+                                             serial_number="",
+                                             element="C",)
+                    projected_cb_atom.set_parent(res)
                     continue
 
-            if atom.get_name() == "CA":
-                ca_list.append(atom)
-            if atom.get_name() == "CB":
-                cb_list.append(atom)
+        if ca_atom is not None:
+            ca_list.append(ca_atom)
+            cb_list.append(projected_cb_atom)
 
     # examine whether all central atom come from the normal amino acids
     atom_name = ["ALA", "ARG", "ASN", "ASP", "CYS",
@@ -64,23 +116,11 @@ def generate_central_atoms(struct: Bio.PDB.Structure.Structure) -> Tuple[List, L
         if atom.parent.get_resname() not in atom_name:
             raise NameError(f"{atom.parent.get_resname()} is not a valid amino acids!")
 
-    # # sampling, no need to do sample because files are mixed up in one batch.
-    # np.random.seed(42)
-    # ca_sample, cb_sample = [], []
-    # num_res = len(ca_list)
-    # sample_num = min(num_res // 2, 100)
-    # sample_index = np.random.randint(0, num_res-1, sample_num)
-    # for index in sample_index:
-    #     ca_sample.append(ca_list[index])
-    #     cb_sample.append(cb_list[index])
-    #
-    # ca_list, cb_list = ca_sample, cb_sample
-
-    return ca_list, cb_list
+    return ca_list, cb_list, ca_cb_vectors
 
 
 def select_in_range_atoms(
-        struct, ca_list, cb_list,
+        struct, ca_list, cb_list, ca_cb_vectors,
         selected_central_atom_type="CA", shift=0
 ) -> Tuple[List, List, List]:
     """This function generates the selected in-range atom corresponding to the central atom ["CA", "CB"].
@@ -88,6 +128,7 @@ def select_in_range_atoms(
         struct: structure in biopython.
         ca_list: list containing CA in the PDB file.
         cb_list: list containing CB in the PDB file.
+        ca_cb_vectors: list containing ca_cb vectors.
         selected_central_atom_type: string stating which central atom is selected.
         shift: shift of carbon alpha along the diagonal direction.
     Returns:
@@ -97,8 +138,7 @@ def select_in_range_atoms(
     """
     central_atom_list = ca_list if selected_central_atom_type == "CA" else cb_list
 
-    # get ca_cb vector and corner vector
-    ca_cb_vectors = [Vector(ca.get_coord()) - Vector(cb.get_coord()) for ca, cb in zip(ca_list, cb_list)]
+    # get corner vector
     corner_vector = Vector(1, 1, 1)
 
     voxel_atom_lists = []
@@ -168,9 +208,9 @@ def generate_voxel_atom_lists(struct: Bio.PDB.Structure.Structure) -> Tuple[List
     Args:
         struct: structure in biopython.
     """
-    ca_list, cb_list = generate_central_atoms(struct)
+    ca_list, cb_list, ca_cb_vectors = gen_ca_cb_vectors(struct)
     voxel_atom_lists, rot_mats, central_atom_coords = select_in_range_atoms(
-        struct, ca_list, cb_list, selected_central_atom_type="CB", shift=0
+        struct, ca_list, cb_list, ca_cb_vectors, selected_central_atom_type="CB", shift=0
     )
     return voxel_atom_lists, rot_mats, central_atom_coords
 
@@ -205,7 +245,7 @@ def generate_selected_element_voxel(
 
     # 3. Generate the coordinates of 20 * 20 * 20 voxels,
     # 1 centric coordinate for 1 voxel, (20, 20, 20, 3)
-    initial_atom_coord = central_atom_coord - num_of_voxels/2 * len_of_voxel + len_of_voxel/2
+    initial_atom_coord = central_atom_coord - num_of_voxels / 2 * len_of_voxel + len_of_voxel / 2
     voxels_coords = [[[[
         initial_atom_coord[0] + i * len_of_voxel,
         initial_atom_coord[1] + j * len_of_voxel,
@@ -277,7 +317,7 @@ def add_atom_to_voxel(
     if arguments.add_partial_charges:
         partial_charges[add_bool[0].T, add_bool[1].T, add_bool[2].T] = atom.occupancy
     if arguments.add_sasa:
-        sasa[add_bool[0].T, add_bool[1].T, add_bool[2].T] = sasa_results.atomArea(atom.get_serial_number()-1)
+        sasa[add_bool[0].T, add_bool[1].T, add_bool[2].T] = sasa_results.atomArea(atom.get_serial_number() - 1)
 
     return voxels_bool, partial_charges, sasa
 
@@ -411,7 +451,6 @@ def gen_voxel_box_file(arguments):
 
     # generate atom lists for 20*20*20 voxels, num_of_residue in pdb file in total.
     voxel_atom_lists, rot_mats, central_atom_coords = generate_voxel_atom_lists(struct)  # (num_ca, num_atoms_in_voxel)
-
     gen_voxel_binary_array(arguments, f, struct, pdb_name, voxel_atom_lists, rot_mats, central_atom_coords)
 
     f.close()
