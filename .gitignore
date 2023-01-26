@@ -3,4 +3,4 @@ pdb_raw_files/
 slides/
 **outputs/
 voxels_hdf5/
-download/
+download/rsyncPDB.sh
