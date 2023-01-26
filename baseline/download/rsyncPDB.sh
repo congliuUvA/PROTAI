@@ -16,22 +16,22 @@
 # Last Updated on: May 14, 2014
 
 # Comment out the following line if you no longer want to see this info
-echo "Prior to first use, you must edit this script to choose a server name, port number, and rsync option!"
+#echo "Prior to first use, you must edit this script to choose a server name, port number, and rsync option!"
 
 ############################################################################
 # You should CHANGE THE NEXT THREE LINES to suit your local setup
 ############################################################################
 
-MIRRORDIR=<your local ftp directory>                 # your top level rsync directory
-LOGFILE=<your local ftp directory>/logs               # file for storing logs
-RSYNC=<your local>/rsync                             # location of local rsync
+MIRRORDIR=/Users/congliu/Desktop/UvA/PROTAI/baseline/pdb_raw_files             # your top level rsync directory
+LOGFILE=/Users/congliu/Desktop/UvA/PROTAI/baseline/pdb_raw_files/logs        # file for storing logs
+RSYNC=/usr/bin/rsync                         # location of local rsync
 
 ##########################################################################################
 #
 #        YOU MUST UNCOMMENT YOUR CHOICE OF SERVER AND CORRESPONDING PORT BELOW
 #
-#SERVER=rsync.wwpdb.org::ftp                                   # RCSB PDB server name
-#PORT=33444                                                    # port RCSB PDB server is using
+SERVER=rsync.wwpdb.org::ftp                                   # RCSB PDB server name
+PORT=33444                                                    # port RCSB PDB server is using
 #
 #SERVER=rsync.ebi.ac.uk::pub/databases/rcsb/pdb-remediated     # PDBe server name
 #PORT=873                                                      # port PDBe server is using
@@ -104,3 +104,8 @@ RSYNC=<your local>/rsync                             # location of local rsync
 # Rsync only the XML format coordinates  /pub/pdb/data/structures/divided/XML (Aproximately 35 GB)
 ############################################################################
 #${RSYNC} -rlpt -v -z --delete --port=$PORT ${SERVER}/data/structures/divided/XML/ $MIRRORDIR > $LOGFILE 2>/dev/null
+
+############################################################################
+# Rsync only the XML format coordinates  /pub/pdb/data/biounit/PDB/ (Aproximately ? GB)
+############################################################################
+${RSYNC} -rlpt -v -z --delete --port=$PORT ${SERVER}/data/biounit/PDB/all/ $MIRRORDIR > $LOGFILE 2>/dev/null
