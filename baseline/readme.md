@@ -41,9 +41,16 @@ The layout inside one specific PDBx.hdf5 is:
 ...     
 
 
-To generate all hdf5 file, run the command line         
-`$ cd voxel_box`      
-`$ python data_gen.py`
+To generate all hdf5 file, run the command line          
+`$ python voxel_box/data_gen.py`
+
+### Box visualization
+Coordinates of boxes of PDB file 3GBN has been stored as a `3gbn.npy` file in directory `box_coords`, 
+simply by running `$ python voxel_box/voxel_rotate_box`.  
+
+Then run commands `$ cd box_visualization/pymolscript`, `$ pymol` to initiate pymol in the working directory, in pymol terminal
+run commands `$ run pymol_draw_gridbox.py` and `$ view_boxes` to visualize all the voxel boxes in the PDB file.
+
 
 
 
