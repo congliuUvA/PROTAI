@@ -6,7 +6,7 @@ from voxel_rotate_atom import gen_voxel_box_file
 import os
 import pandas as pd
 import numpy as np
-
+from tqdm import tqdm
 
 @hydra.main(version_base=None, config_path="../config", config_name="config")
 def data_gen(args: DictConfig):
@@ -21,14 +21,14 @@ def data_gen(args: DictConfig):
     raw_pdb_dir = root_dir / Path(args_data.raw_pdb_dir)
 
     # dataset split csv path
-    dataset_split_csv = root_dir / Path(args.dataset_split_csv)
+    dataset_split_csv = root_dir / Path(args_data.dataset_split_csv)
 
     # download raw data set if not existed in the WR.
     if not raw_pdb_dir.exists():
         raw_pdb_dir.mkdir()
         print("Start downloading raw pdb files...")
         os.system("sh ../../download/rsyncPDB.sh")
-    print('Finished downloading!')
+        print('Finished downloading!')
 
     # create a directory for hdf5 files
     hdf5_file_dir = baseline_dir / Path("voxels_hdf5")
@@ -40,7 +40,10 @@ def data_gen(args: DictConfig):
     dataset_split_pd = pd.read_csv(str(dataset_split_csv))
     pdb_id_array = np.unique(np.array(dataset_split_pd.id))
 
-    for pdb in raw_pdb_dir.rglob("*.gz"):
+    count_pdb_files = 0
+    for _ in raw_pdb_dir.rglob("*.gz"): count_pdb_files += 1
+
+    for pdb in tqdm(raw_pdb_dir.rglob("*.gz"), total=count_pdb_files):
         # unzipped pdb file name
         pdb_id = pdb.name.split(".")[0]
 
@@ -60,6 +63,9 @@ def data_gen(args: DictConfig):
         args_voxel_box.pdb_name = Path(pdb_unzip).stem
         args_voxel_box.pdb_path = pdb_unzip
         gen_voxel_box_file(args_voxel_box)
+
+        # remove generated pdb file, clean up the mess
+        os.system(f"rm {pdb_unzip}")
 
 
 if __name__ == "__main__":
