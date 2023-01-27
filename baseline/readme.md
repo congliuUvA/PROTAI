@@ -49,7 +49,7 @@ Coordinates of boxes of PDB file 3GBN has been stored as a `3gbn.npy` file in di
 simply by running `$ python voxel_box/voxel_rotate_box`.  
 
 Then run commands `$ cd box_visualization/pymolscript`, `$ pymol` to initiate pymol in the working directory, in pymol terminal
-run commands `run pymol_draw_gridbox.py` and `view_boxes` to visualize all the voxel boxes in the PDB file.
+run commands `$ run pymol_draw_gridbox.py` and `$ view_boxes` to visualize all the voxel boxes in the PDB file.
 
 
 
