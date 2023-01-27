@@ -11,10 +11,8 @@ from itertools import product
 from Bio.PDB.vectors import Vector, rotmat
 from pathlib import Path
 from voxel_rotate_atom import gen_ca_cb_vectors, visualize_voxels, cal_sasa
-import argparse
 import freesasa
 import hydra
-from omegaconf import DictConfig, OmegaConf
 
 num_of_voxels = 20
 len_of_voxel = 0.8
