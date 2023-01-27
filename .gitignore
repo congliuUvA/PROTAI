@@ -5,3 +5,4 @@ voxels_hdf5/
 download/
 *.out
 dataset_split_v1_0_0.csv
+.idea/
