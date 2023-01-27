@@ -176,14 +176,14 @@ def select_in_range_atoms(
                 if atom != central_atom and atom.parent != central_atom.parent:
                     voxel_atom_list.append(atom)
 
-            if atom.parent == central_atom.parent and not (
-                    range_x[0] < atom_x < range_x[1] and
-                    range_y[0] < atom_y < range_y[1] and
-                    range_z[0] < atom_z < range_z[1]
-            ):
-                raise ValueError("Shift value needs to be justified,"
-                                 "atoms from central residual is not included in the box! "
-                                 "Please use a different shift value.")
+            # if atom.parent == central_atom.parent and not (
+            #         range_x[0] < atom_x < range_x[1] and
+            #         range_y[0] < atom_y < range_y[1] and
+            #         range_z[0] < atom_z < range_z[1]
+            # ):
+            #     raise ValueError("Shift value needs to be justified,"
+            #                      "atoms from central residual is not included in the box! "
+            #                      "Please use a different shift value.")
 
         voxel_atom_lists.append(voxel_atom_list)
 
