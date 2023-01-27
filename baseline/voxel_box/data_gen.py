@@ -20,6 +20,7 @@ def data_gen(args: DictConfig):
         raw_pdb_dir.mkdir()
         print("Start downloading raw pdb files...")
         os.system("sh ../../download/rsyncPDB.sh")
+    print('Finished downloading!')
 
     # create a directory for hdf5 files
     hdf5_file_dir = baseline_dir / Path("voxels_hdf5")
