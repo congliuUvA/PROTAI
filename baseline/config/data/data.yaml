@@ -2,3 +2,6 @@
 
 # raw data directory path of PDB files
 raw_pdb_dir: pdb_raw_files
+
+# dataset split csv name
+dataset_split_csv: dataset_split_v1_0_0.csv
