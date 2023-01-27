@@ -4,6 +4,8 @@ from omegaconf import DictConfig
 from pathlib import Path
 from voxel_rotate_atom import gen_voxel_box_file
 import os
+import pandas as pd
+import numpy as np
 
 
 @hydra.main(version_base=None, config_path="../config", config_name="config")
@@ -14,8 +16,14 @@ def data_gen(args: DictConfig):
     args_voxel_box = args.voxel_box
     baseline_dir = Path.cwd().parent  # baseline/
     root_dir = baseline_dir.parent
+
     # raw pdb file path
     raw_pdb_dir = root_dir / Path(args_data.raw_pdb_dir)
+
+    # dataset split csv path
+    dataset_split_csv = root_dir / Path(args.dataset_split_csv)
+
+    # download raw data set if not existed in the WR.
     if not raw_pdb_dir.exists():
         raw_pdb_dir.mkdir()
         print("Start downloading raw pdb files...")
@@ -29,11 +37,22 @@ def data_gen(args: DictConfig):
     # assign path to arguments of voxel_box
     args_voxel_box.hdf5_file_dir = str(hdf5_file_dir)
 
+    dataset_split_pd = pd.read_csv(str(dataset_split_csv))
+    pdb_id_array = np.unique(np.array(dataset_split_pd.id))
+
     for pdb in raw_pdb_dir.rglob("*.gz"):
         # unzipped pdb file name
         pdb_id = pdb.name.split(".")[0]
+
+        # if pdb id is not in the list, skip the pdb file.
+        if pdb_id not in pdb_id_array:
+            continue
+
+        # if corresponding hdf5 file has been created, skip the pdb file.
         if (hdf5_file_dir.joinpath(pdb_id + ".hdf5")).exists():
             continue
+
+        # unzip pdb file
         pdb_unzip = ".".join(str(pdb).split(".")[:-1])
         os.system("gunzip --keep -f " + str(pdb))
 
