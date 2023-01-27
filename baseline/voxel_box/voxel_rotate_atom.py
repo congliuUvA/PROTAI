@@ -63,58 +63,50 @@ def gen_ca_cb_vectors(struct: Bio.PDB.Structure.Structure) -> Tuple[List, List, 
     Returns:
 
     """
+    # examine whether all central atom come from the normal amino acids
+    res_name = ["ALA", "ARG", "ASN", "ASP", "CYS",
+                "GLU", "GLN", "GLY", "HIS", "ILE",
+                "LEU", "LYS", "MET", "PHE", "PRO",
+                "SER", "THR", "TRP", "TYR", "VAL"]
+
     ca_cb_vectors = []
     ca_list, cb_list = [], []
     for res in struct.get_residues():
-        ca_atom, c_atom, n_atom, real_cb_atom = None, None, None, None
+        # skip residue that are not AA.
+        if res.get_resname() not in res_name:
+            continue
+        ca_atom, c_atom, n_atom, real_cb_atom, projected_cb_atom, cb_atom_coord = [None] * 6
         for atom in res.get_atoms():
             if atom.get_name() == "CA": ca_atom = atom
             if atom.get_name() == "C": c_atom = atom
             if atom.get_name() == "N": n_atom = atom
             if ca_atom is not None and c_atom is not None and n_atom is not None:
-                # calculate projected CB coordinates
-                cb_atom_coord = cal_projected_cb_coords(c_atom, n_atom, ca_atom)
-                ca_cb_vectors.append(Vector(ca_atom.coord - cb_atom_coord))
-
                 if res.get_resname() != "GLY":
-                    # create cb atom
+                    # residue other than GLY must have CB
                     if atom.get_name() == "CB":
+                        # calculate projected CB coordinates
+                        cb_atom_coord = cal_projected_cb_coords(c_atom, n_atom, ca_atom)
                         real_cb_atom = atom
-                        projected_cb_atom = Atom(name="CB_fake",
-                                                 coord=cb_atom_coord,
-                                                 bfactor=real_cb_atom.bfactor,
-                                                 occupancy=real_cb_atom.occupancy,
-                                                 altloc=real_cb_atom.altloc,
+                        projected_cb_atom = Atom(name="CB_fake", coord=cb_atom_coord, bfactor=real_cb_atom.bfactor,
+                                                 occupancy=real_cb_atom.occupancy, altloc=real_cb_atom.altloc,
                                                  fullname=real_cb_atom.fullname,
-                                                 serial_number=real_cb_atom.serial_number,
-                                                 element="C",
-                                                 )
+                                                 serial_number=real_cb_atom.serial_number, element="C",)
                         projected_cb_atom.set_parent(res)
                         continue
                 else:
-                    projected_cb_atom = Atom(name="CB_fake",
-                                             coord=cb_atom_coord,
-                                             bfactor=0,
-                                             occupancy=0,
-                                             altloc="",
-                                             fullname="",
-                                             serial_number="",
-                                             element="C",)
+                    # calculate projected CB coordinates
+                    cb_atom_coord = cal_projected_cb_coords(c_atom, n_atom, ca_atom)
+                    # create cb atom
+                    projected_cb_atom = Atom(name="CB_fake", coord=cb_atom_coord, bfactor=0, occupancy=0,
+                                             altloc="", fullname="", serial_number="", element="C", )
                     projected_cb_atom.set_parent(res)
                     continue
 
-        if ca_atom is not None:
+        necessary_content = [ca_atom, projected_cb_atom, c_atom, n_atom, cb_atom_coord]
+        if all(i is not None for i in necessary_content):
             ca_list.append(ca_atom)
             cb_list.append(projected_cb_atom)
-
-    # examine whether all central atom come from the normal amino acids
-    atom_name = ["ALA", "ARG", "ASN", "ASP", "CYS",
-                 "GLU", "GLN", "GLY", "HIS", "ILE",
-                 "LEU", "LYS", "MET", "PHE", "PRO",
-                 "SER", "THR", "TRP", "TYR", "VAL"]
-    for atom in ca_list:
-        if atom.parent.get_resname() not in atom_name:
-            raise NameError(f"{atom.parent.get_resname()} is not a valid amino acids!")
+            ca_cb_vectors.append(Vector(ca_atom.coord - cb_atom_coord))
 
     return ca_list, cb_list, ca_cb_vectors
 
