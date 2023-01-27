@@ -61,7 +61,7 @@ def load_protein(arguments, pdb_name: str, file_path: str) -> Bio.PDB.Structure.
         pqr2pdb(pqr_file_path, Path(file_path).stem + "_pqr.pdb")
         file_path = Path(file_path).stem + "_pqr.pdb"
 
-    parser = PDBParser(QUIET=1) if Path(file_path).suffix == ".pdb" else MMCIFParser(QUIET=1)
+    parser = PDBParser(QUIET=1) if "pdb" in Path(file_path).suffix else MMCIFParser(QUIET=1)
     struct = parser.get_structure(pdb_name, file_path)
     return struct
 
