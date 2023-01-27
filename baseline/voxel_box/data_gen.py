@@ -7,6 +7,8 @@ import os
 import pandas as pd
 import numpy as np
 from tqdm import tqdm
+import ray
+
 
 @hydra.main(version_base=None, config_path="../config", config_name="config")
 def data_gen(args: DictConfig):
@@ -43,7 +45,8 @@ def data_gen(args: DictConfig):
     count_pdb_files = 0
     for _ in raw_pdb_dir.rglob("*.gz"): count_pdb_files += 1
 
-    for pdb in tqdm(raw_pdb_dir.rglob("*.gz"), total=count_pdb_files):
+    tasks = []
+    for pdb in raw_pdb_dir.rglob("*.gz"):
         # unzipped pdb file name
         pdb_id = pdb.name.split(".")[0]
 
@@ -62,11 +65,16 @@ def data_gen(args: DictConfig):
         # assign pdb info to args_voxel_box
         args_voxel_box.pdb_name = Path(pdb_unzip).stem
         args_voxel_box.pdb_path = pdb_unzip
-        gen_voxel_box_file(args_voxel_box)
+        task = gen_voxel_box_file.remote(args_voxel_box)
 
         # remove generated pdb file, clean up the mess
         os.system(f"rm {pdb_unzip}")
+        tasks.append(task)
+
+    ray.get(tasks)
 
 
 if __name__ == "__main__":
+    if not ray.is_initialized():
+        ray.init(num_cpus=12)
     data_gen()
