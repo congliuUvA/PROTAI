@@ -3,6 +3,7 @@ from biopython_utils import load_protein
 import Bio
 import numpy as np
 from numpy import ndarray
+import ray
 from tqdm import tqdm
 from typing import List, Tuple
 import matplotlib.pyplot as plt
@@ -90,7 +91,7 @@ def gen_ca_cb_vectors(struct: Bio.PDB.Structure.Structure) -> Tuple[List, List, 
                         projected_cb_atom = Atom(name="CB_fake", coord=cb_atom_coord, bfactor=real_cb_atom.bfactor,
                                                  occupancy=real_cb_atom.occupancy, altloc=real_cb_atom.altloc,
                                                  fullname=real_cb_atom.fullname,
-                                                 serial_number=real_cb_atom.serial_number, element="C",)
+                                                 serial_number=real_cb_atom.serial_number, element="C", )
                         projected_cb_atom.set_parent(res)
                         continue
                 else:
@@ -367,9 +368,9 @@ def gen_voxel_binary_array(arguments, f, struct, pdb_name,
         rot_mats: rotation matrix of each voxel box. (len = num of residues in total)
         central_atom_coords: central atom coordinates of each box.
     """
-    for idx, voxel_atom_list, rot_mat, central_atom_coord in zip(
+    for idx, voxel_atom_list, rot_mat, central_atom_coord in tqdm(zip(
             np.arange(len(voxel_atom_lists)), voxel_atom_lists, rot_mats, central_atom_coords
-    ):
+    ), total=len(voxel_atom_lists)):
         # take out the central atom
         central_atom = voxel_atom_list[0]
 
@@ -424,6 +425,7 @@ def gen_voxel_binary_array(arguments, f, struct, pdb_name,
         dataset.attrs["residue_icode"] = residue_icode
 
 
+@ray.remote
 def gen_voxel_box_file(arguments):
     """The main function of generating voxels.
 
