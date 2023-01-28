@@ -17,7 +17,7 @@ def data_gen(args: DictConfig):
     args_data = args.data
     args_voxel_box = args.voxel_box
     baseline_dir = Path.cwd().parent  # baseline/
-    root_dir = baseline_dir.parent
+    root_dir = baseline_dir.parent if args_data.user_cluster else "/hddstore/cliu3"
 
     # raw pdb file path
     raw_pdb_dir = root_dir / Path(args_data.raw_pdb_dir)
@@ -33,7 +33,7 @@ def data_gen(args: DictConfig):
         print('Finished downloading!')
 
     # create a directory for hdf5 files
-    hdf5_file_dir = baseline_dir / Path("voxels_hdf5")
+    hdf5_file_dir = root_dir / Path("voxels_hdf5")
     hdf5_file_dir.mkdir() if not hdf5_file_dir.exists() else None
 
     # assign path to arguments of voxel_box
