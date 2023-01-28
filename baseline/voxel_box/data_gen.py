@@ -10,7 +10,7 @@ from tqdm import tqdm
 import ray
 
 
-@hydra.main(version_base=None, config_path="../config", config_name="config")
+@hydra.main(version_base=None, config_path="../../config", config_name="config")
 def data_gen(args: DictConfig):
     """This function generates hdf5 file for all pdb files"""
     # configuration assignment
@@ -70,7 +70,7 @@ def data_gen(args: DictConfig):
         # assign pdb info to args_voxel_box
         args_voxel_box.pdb_name = Path(pdb_unzip).stem
         args_voxel_box.pdb_path = pdb_unzip
-        task = gen_voxel_box_file.remote(args_voxel_box)
+        task = gen_voxgiel_box_file.remote(args_voxel_box)
 
         # remove generated pdb file, clean up the mess
         # os.system(f"rm {pdb_unzip}")
