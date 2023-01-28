@@ -17,7 +17,7 @@ def data_gen(args: DictConfig):
     args_data = args.data
     args_voxel_box = args.voxel_box
     baseline_dir = Path.cwd().parent  # baseline/
-    root_dir = baseline_dir.parent if args_data.user_cluster else "/hddstore/cliu3"
+    root_dir = baseline_dir.parent if not args_data.user_cluster else "/hddstore/cliu3"
 
     # raw pdb file path
     raw_pdb_dir = root_dir / Path(args_data.raw_pdb_dir)
@@ -46,6 +46,7 @@ def data_gen(args: DictConfig):
     ex_pdb_id = []
 
     # ray tasks
+    print("Start ray tasks.")
     tasks = []
     for pdb in raw_pdb_dir.rglob("*.gz"):
         # unzipped pdb file name
