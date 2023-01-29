@@ -7,4 +7,4 @@ raw_pdb_dir: pdb_raw_files
 dataset_split_csv: dataset_split_v1_0_0.csv
 
 # use cluster
-use_hddtore: True
+use_hddtore: False
