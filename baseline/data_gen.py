@@ -2,22 +2,24 @@
 import hydra
 from omegaconf import DictConfig
 from pathlib import Path
-from voxel_rotate_atom import gen_voxel_box_file
+from voxel_box.voxel_rotate_atom import gen_voxel_box_file
 import os
 import pandas as pd
 import numpy as np
-from tqdm import tqdm
 import ray
+from utils import log
+
+logger = log.get_logger(__name__)
 
 
-@hydra.main(version_base=None, config_path="../../config", config_name="config")
+@hydra.main(version_base=None, config_path="../config", config_name="config")
 def data_gen(args: DictConfig):
     """This function generates hdf5 file for all pdb files"""
     # configuration assignment
     args_data = args.data
     args_voxel_box = args.voxel_box
-    baseline_dir = Path.cwd().parent  # baseline/
-    root_dir = baseline_dir.parent if not args_data.user_cluster else "/hddstore/cliu3"
+    baseline_dir = Path.cwd()  # baseline/
+    root_dir = baseline_dir.parent if not args_data.use_cluster else "/hddstore/cliu3"
 
     # raw pdb file path
     raw_pdb_dir = root_dir / Path(args_data.raw_pdb_dir)
@@ -28,9 +30,9 @@ def data_gen(args: DictConfig):
     # download raw data set if not existed in the WR.
     if not raw_pdb_dir.exists():
         raw_pdb_dir.mkdir()
-        print("Start downloading raw pdb files...")
+        logger.info("Start downloading raw pdb files...")
         os.system("sh ../../download/rsyncPDB.sh")
-        print('Finished downloading!')
+        logger.info('Finished downloading!')
 
     # create a directory for hdf5 files
     hdf5_file_dir = root_dir / Path("voxels_hdf5")
@@ -46,7 +48,7 @@ def data_gen(args: DictConfig):
     ex_pdb_id = []
 
     # ray tasks
-    print("Start ray tasks.")
+    logger.info("Start ray tasks.")
     tasks = []
     for pdb in raw_pdb_dir.rglob("*.gz"):
         # unzipped pdb file name
