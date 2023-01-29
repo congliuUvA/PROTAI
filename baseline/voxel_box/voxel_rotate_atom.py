@@ -1,5 +1,4 @@
 """This module is for voxel box generation."""
-from biopython_utils import load_protein
 import Bio
 import numpy as np
 from numpy import ndarray
@@ -14,9 +13,65 @@ from Bio.PDB.Atom import Atom
 import freesasa
 import h5py
 from pathlib import Path
+from Bio.PDB.PDBParser import PDBParser
+from Bio.PDB.MMCIFParser import MMCIFParser
 
 num_of_voxels = 20
 len_of_voxel = 0.8
+
+
+def pqr2pdb(fname_pqr, fname_pdb):
+
+    lines = open(fname_pqr, 'r').readlines()
+    fout = open(fname_pdb, 'w')
+
+    chain_id = ['A', 'B', 'C', 'D', 'E', 'F',
+                'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N']
+    ich = 0
+    for line in lines:
+        content = line.split()
+        if line[:6] in ['ATOM  ', 'HETATM']:
+            atnm = line[13:15].upper()
+            resName = line[17:20].upper()
+            symbol = atnm[0]
+            if atnm[:2] in ['CL', 'NA', 'MG', 'BE', 'LI', 'ZN']:
+                symbol = atnm[:2]
+            elif atnm[:2] == 'CA' and resName[:2] == 'CA':
+                symbol = 'CA'
+            sline = line[:21] + chain_id[ich] + line[22:54] + \
+                "  " + content[-2] + "  " + content[-1] + "          %2s  " % symbol
+            print(sline, file=fout)
+        elif line[:3] == 'END':
+            print('END', file=fout)
+        else:
+            print(line[:-1], file=fout)
+
+        if line[:3] == 'TER':
+            ich += 1
+
+    fout.close()
+
+
+def load_protein(arguments, pdb_name: str, file_path: str) -> Bio.PDB.Structure.Structure:
+    """This function is used to load the protein file in format of mmCIF to the structure in Biopython.
+
+    Args:
+        arguments: arguments input by users.
+        pdb_name: PDB ID
+        file_path: file path of the protein file.
+
+    Returns:
+        struct: Structure of the selected protein in Biopython.
+    """
+    if arguments.addH:
+        pqr_file_path = str(Path(file_path).parent.joinpath(pdb_name)) + ".pqr"
+        os.system(f"pdb2pqr30 --ff=PARSE {file_path} {pqr_file_path}")
+        pqr2pdb(pqr_file_path, Path(file_path).stem + "_pqr.pdb")
+        file_path = Path(file_path).stem + "_pqr.pdb"
+
+    parser = PDBParser(QUIET=1) if "pdb" in Path(file_path).suffix else MMCIFParser(QUIET=1)
+    struct = parser.get_structure(pdb_name, file_path)
+    return struct
 
 
 def range_editor(coord: ndarray) -> List:
