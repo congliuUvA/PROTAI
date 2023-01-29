@@ -19,7 +19,7 @@ def data_gen(args: DictConfig):
     args_data = args.data
     args_voxel_box = args.voxel_box
     baseline_dir = Path.cwd()  # baseline/
-    root_dir = baseline_dir.parent if not args_data.use_cluster else "/hddstore/cliu3"
+    root_dir = baseline_dir.parent if not args_data.use_hddtore else "/hddstore/cliu3"
 
     # raw pdb file path
     raw_pdb_dir = root_dir / Path(args_data.raw_pdb_dir)
@@ -86,5 +86,5 @@ def data_gen(args: DictConfig):
 if __name__ == "__main__":
     logger.info("Data gen started!")
     if not ray.is_initialized():
-        ray.init(num_cpus=4)
+        ray.init(num_cpus=36)
     data_gen()
