@@ -85,5 +85,5 @@ def data_gen(args: DictConfig):
 
 if __name__ == "__main__":
     if not ray.is_initialized():
-        ray.init(num_cpus=36)
+        ray.init(num_cpus=4)
     data_gen()
