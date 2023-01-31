@@ -9,9 +9,11 @@ addH: False
 add_partial_charges: False
 # Add sasa to the file or not (atom.bfactor = atom radii)
 add_sasa: False
-# PDB ID
+# PDB pure ID
 pdb_name: "3gbn"
 # PDB file path
 pdb_path: "3gbn.pdb"
+# PDB id
+pdb_id:
 # hdf5 directory path
 hdf5_file_dir:
