@@ -44,10 +44,15 @@ def data_gen(args: DictConfig):
     dataset_split_pd = pd.read_csv(str(dataset_split_csv))
     pdb_id_array = np.unique(np.array(dataset_split_pd.id))
 
+    names = np.array([pdb for pdb in raw_pdb_dir.rglob("*.gz")])
+    half = names.shape[0] // 2
+    names_first_half = names[:half]
+    names_second_half = names[half:]
+
     # ray tasks
     logger.info("Start ray tasks.")
     tasks = []
-    for pdb in raw_pdb_dir.rglob("*.gz"):
+    for pdb in names_first_half:
         # unzipped pdb file name
         pdb_pure_id = pdb.name.split(".")[0]
         assembly_id = pdb.name.split(".")[1][0]
