@@ -52,7 +52,7 @@ def data_gen(args: DictConfig):
     # ray tasks
     logger.info("Start ray tasks.")
     tasks = []
-    for pdb in names_first_half:
+    for pdb in names_second_half:
         # unzipped pdb file name
         pdb_pure_id = pdb.name.split(".")[0]
         assembly_id = pdb.name.split(".")[1][0]
@@ -86,5 +86,5 @@ def data_gen(args: DictConfig):
 if __name__ == "__main__":
     logger.info("Data gen started!")
     if not ray.is_initialized():
-        ray.init(address='10.150.1.8:6379')
+        ray.init(address='10.150.1.9:6379')
     data_gen()
