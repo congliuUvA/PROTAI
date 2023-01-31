@@ -36,8 +36,8 @@ The layout inside one specific PDBx.hdf5 is:
 ...         
 ...             
 |         +-- group_Chain_ID = "B"      
-|                    +-- dataset_residue_serial_number = "1"         
-|                        +-- dataset_residue_serial_number = "2"      
+|                    +-- dataset_residue_serial_number = "3"         
+|                        +-- dataset_residue_serial_number = "4"      
 ...     
 
 
