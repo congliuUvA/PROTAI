@@ -490,12 +490,13 @@ def gen_voxel_box_file(arguments):
     # configuration set up
     pdb_name = arguments.pdb_name
     pdb_path = str(Path.cwd().joinpath(arguments.pdb_path))
+    pdb_id = arguments.pdb_id
 
     # 0. Load protein structure
     struct = load_protein(arguments, pdb_name, pdb_path)
 
     # start a hdf5 file
-    f = h5py.File(str(Path(arguments.hdf5_file_dir) / pdb_name) + ".hdf5", "w")
+    f = h5py.File(str(Path(arguments.hdf5_file_dir) / pdb_id) + ".hdf5", "w")
 
     # generate atom lists for 20*20*20 voxels, num_of_residue in pdb file in total.
     voxel_atom_lists, rot_mats, central_atom_coords = generate_voxel_atom_lists(struct)  # (num_ca, num_atoms_in_voxel)
