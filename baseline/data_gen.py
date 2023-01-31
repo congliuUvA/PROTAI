@@ -44,26 +44,21 @@ def data_gen(args: DictConfig):
     dataset_split_pd = pd.read_csv(str(dataset_split_csv))
     pdb_id_array = np.unique(np.array(dataset_split_pd.id))
 
-    # record executed pdb id
-    ex_pdb_id = []
-
     # ray tasks
     logger.info("Start ray tasks.")
     tasks = []
     for pdb in raw_pdb_dir.rglob("*.gz"):
         # unzipped pdb file name
-        pdb_id = pdb.name.split(".")[0]
+        pdb_pure_id = pdb.name.split(".")[0]
+        assembly_id = pdb.name.split(".")[1][0]
+        pdb_id = pdb_pure_id + "_" + assembly_id  # e.g. "2HBS_1"
 
         # if pdb id is not in the list, skip the pdb file.
         if pdb_id not in pdb_id_array:
             continue
 
-        # if pdb id has been executed, skip the pdb gz file.
-        if pdb_id in ex_pdb_id:
-            continue
-
         # if corresponding hdf5 file has been created, skip the pdb file.
-        if (hdf5_file_dir.joinpath(pdb_id + ".hdf5")).exists():
+        if (hdf5_file_dir.joinpath(pdb_pure_id + ".hdf5")).exists():
             continue
 
         # unzip pdb file
@@ -71,14 +66,14 @@ def data_gen(args: DictConfig):
         os.system(f"gunzip -c {pdb} > {pdb_unzip}")
 
         # assign pdb info to args_voxel_box
-        args_voxel_box.pdb_name = Path(pdb_unzip).stem
+        args_voxel_box.pdb_name = pdb_pure_id
         args_voxel_box.pdb_path = pdb_unzip
+        args_voxel_box.pdb_id = pdb_id
         task = gen_voxel_box_file.remote(args_voxel_box)
 
         # remove generated pdb file, clean up the mess
         # os.system(f"rm {pdb_unzip}")
         tasks.append(task)
-        ex_pdb_id.append(pdb_id)
 
     ray.get(tasks)
 
