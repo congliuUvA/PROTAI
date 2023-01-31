@@ -52,7 +52,7 @@ def data_gen(args: DictConfig):
     # ray tasks
     logger.info("Start ray tasks.")
     tasks = []
-    for pdb in names_first_half:
+    for pdb in names_second_half:
         # unzipped pdb file name
         pdb_pure_id = pdb.name.split(".")[0]
         assembly_id = pdb.name.split(".")[1][0]
