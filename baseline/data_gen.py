@@ -56,15 +56,15 @@ def data_gen(args: DictConfig):
             break
         # unzipped pdb file name
         pdb_pure_id = pdb.name.split(".")[0]
-        assembly_id = pdb.name.split(".")[1][0]
+        assembly_id = pdb.name.split(".")[1][-1]
         pdb_id = pdb_pure_id + "_" + assembly_id  # e.g. "2HBS_1"
 
         # if pdb id is not in the list, skip the pdb file.
-        if pdb_id not in pdb_id_array:
+        if pdb_pure_id not in pdb_id_array:
             continue
 
         # if corresponding hdf5 file has been created, skip the pdb file.
-        if (hdf5_file_dir.joinpath(pdb_pure_id + ".hdf5")).exists():
+        if (hdf5_file_dir.joinpath(pdb_id + ".hdf5")).exists():
             continue
 
         # unzip pdb file
