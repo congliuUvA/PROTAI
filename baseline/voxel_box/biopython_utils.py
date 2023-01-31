@@ -7,6 +7,7 @@ from Bio.PDB.Polypeptide import PPBuilder, is_aa
 from typing import Tuple, List
 from collections import defaultdict
 import numpy as np
+from voxel_rotate_atom import load_protein
 
 
 def extract_sequence(struct: Bio.PDB.Structure.Structure) -> Tuple[str, List[str]]:
