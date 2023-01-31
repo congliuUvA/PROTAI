@@ -412,7 +412,7 @@ def gen_voxel_binary_array(arguments, f, struct, pdb_name,
                            voxel_atom_lists: List, rot_mats: List,
                            central_atom_coords: List):
     """This function generates voxel binary array given the
-    selected voxel atom lists and rotation matrix and central atom coordintaes
+    selected voxel atom lists and rotation matrix and central atom coordinates
 
     Args:
         arguments: arguments of the user.
