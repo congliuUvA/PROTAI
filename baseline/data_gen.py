@@ -93,3 +93,4 @@ if __name__ == "__main__":
     if not ray.is_initialized():
         ray.init(address='10.150.1.8:6379')
     data_gen()
+
