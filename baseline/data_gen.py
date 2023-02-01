@@ -35,7 +35,7 @@ def data_gen(args: DictConfig):
         logger.info('Finished downloading!')
 
     # create a directory for hdf5 files
-    hdf5_file_dir = root_dir / Path("voxels_hdf5")
+    hdf5_file_dir = root_dir / Path(args_data.hdf5_file_dir)
     hdf5_file_dir.mkdir() if not hdf5_file_dir.exists() else None
 
     # assign path to arguments of voxel_box
@@ -51,16 +51,16 @@ def data_gen(args: DictConfig):
     logger.info("Start ray tasks.")
     tasks = []
     for pdb in raw_pdb_dir.rglob("*.gz"):
-        # if idx > total / 2:
-        #     print("First half completed")
-        #     break
-        if idx <= total / 2:
-            idx += 1
-            continue
+        if idx > total / 2:
+            print("First half completed")
+            break
+        # if idx <= total / 2:
+        #     idx += 1
+        #     continue
         # unzipped pdb file name
         pdb_pure_id = pdb.name.split(".")[0]
-        assembly_id = pdb.name.split(".")[1][-1]
-        pdb_id = pdb_pure_id + "_" + assembly_id  # e.g. "2HBS_1"
+        assembly_id = pdb.name.split(".")[1]
+        pdb_id = pdb_pure_id + "_" + assembly_id  # e.g. "2HBS_pdb1"
 
         # if pdb id is not in the list, skip the pdb file.
         if pdb_pure_id not in pdb_id_array:
