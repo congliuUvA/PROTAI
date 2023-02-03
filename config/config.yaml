@@ -2,3 +2,4 @@
 defaults:
   - voxel_box: voxel_box
   - data: data
+  - model: cnn
