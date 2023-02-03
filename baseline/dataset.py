@@ -44,6 +44,13 @@ class VoxelsDataset(Dataset):
             self.dataset_csv = self.dataset_csv.loc[self.dataset_csv["fold"] == fold]
         # length accumulate list, prepared for indexing specific box in the data set.
         self.len_accumulate_list = []
+        self.residue_name = [
+            "ALA", "ARG", "ASN", "ASP", "CYS",
+            "GLU", "GLN", "GLY", "HIS", "ILE",
+            "LEU", "LYS", "MET", "PHE", "PRO",
+            "SER", "THR", "TRP", "TYR", "VAL"
+        ]
+        self.residue_name_dic = {self.residue_name[i]: idx for idx, i in enumerate(self.residue_name)}
 
     def len(self) -> int:
         """Return the length of the dataset.
@@ -86,7 +93,7 @@ class VoxelsDataset(Dataset):
         chain_id = row.full_id.split("_")[-1]
         f = h5py.File(hdf5_file, "r")
         data = f[chain_id][list(f[chain_id].keys())[residue_idx]]
-        label = str(data.attrs["residue_name"])
+        label = self.residue_name_dic[str(data.attrs["residue_name"])]
         voxel = torch.tensor(data[:]) + 0
         return voxel, label
 
