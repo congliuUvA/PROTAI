@@ -1,6 +1,5 @@
 """3D CNN model for voxel boxes."""
 from torch import nn, tensor
-import torch
 
 
 class CNN(nn.Module):
@@ -17,8 +16,12 @@ class CNN(nn.Module):
         self.conv_layer3 = nn.Conv3d(200, 400, kernel_size=(3, 3, 3))
         self.max_pooling = nn.MaxPool3d(kernel_size=2, stride=2)
         self.relu = nn.ReLU()
-        self.mlp = nn.Linear(400*3**3, num_classes)
+        self.mlp1 = nn.Linear(400*3**3, 1000)
+        self.mlp2 = nn.Linear(1000, 100)
+        self.mlp3 = nn.Linear(100, num_classes)
         self.softmax = nn.functional.softmax
+        self.dropout_3d = nn.Dropout3d(p=0.3)
+        self.dropout = nn.Dropout(p=0.3)
 
     def forward(self, x: tensor) -> tensor:
         """Forward function of 3DCNN.
@@ -26,11 +29,13 @@ class CNN(nn.Module):
         Args:
             x: input signal.
         """
-        x = self.relu(self.conv_layer1(x))
-        x = self.relu(self.conv_layer2(x))
+        x = self.dropout_3d(self.relu(self.conv_layer1(x)))
+        x = self.dropout_3d(self.relu(self.conv_layer2(x)))
         x = self.max_pooling(x)
-        x = self.relu(self.conv_layer3(x))
+        x = self.dropout_3d(self.relu(self.conv_layer3(x)))
         x = self.max_pooling(x)
-        x = self.softmax(self.mlp(x.reshape(x.shape[0], -1)), dim=-1)
+        x = self.dropout(self.relu(self.mlp1(x.reshape(x.shape[0], -1))))
+        x = self.dropout(self.relu(self.mlp2(x)))
+        x = self.mlp3(x)
+        x = self.softmax(x.reshape(x.shape[0], -1), dim=-1)
         return x
-
