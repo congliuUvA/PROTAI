@@ -7,3 +7,5 @@ download/
 dataset_split_v1_0_0.csv
 .idea/
 **__pycache__/
+**wandb/
+*.npy
