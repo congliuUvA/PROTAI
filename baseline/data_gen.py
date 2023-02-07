@@ -44,10 +44,25 @@ def data_gen(args: DictConfig):
     dataset_split_pd = pd.read_csv(str(dataset_split_csv))
     pdb_id_array = np.unique(np.array(dataset_split_pd.id))
 
+    idx = 0
+    total = 289134
+
     # ray tasks
     logger.info("Start ray tasks.")
     tasks = []
     for pdb in raw_pdb_dir.rglob("*.gz"):
+        if idx > int(total / 3):
+            print("1/3 completed")
+            break
+        # if idx <= int(total / 3):
+        #     idx += 1
+        #     continue
+        # if idx <= int(total / 3):
+        #     idx += 1
+        #     continue
+        # if idx > 2*int(total / 3):
+        #     print("2/3 completed")
+        #     break
         # unzipped pdb file name
         pdb_pure_id = pdb.name.split(".")[0]
         assembly_id = pdb.name.split(".")[1]
@@ -74,6 +89,7 @@ def data_gen(args: DictConfig):
         # remove generated pdb file, clean up the mess
         # os.system(f"rm {pdb_unzip}")
         tasks.append(task)
+        idx += 1
 
     ray.get(tasks)
 
@@ -83,4 +99,3 @@ if __name__ == "__main__":
     if not ray.is_initialized():
         ray.init(address='10.150.1.8:6379')
     data_gen()
-
