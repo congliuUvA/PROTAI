@@ -353,9 +353,7 @@ def add_atom_to_voxel(
         sasa: solvent accessible surface area array.
     """
 
-    radius_table = {"C": 0.70,
-                    "N": 0.65, "O": 0.60,
-                    "S": 1.00, "H": 0.25}
+    radius_table = {"C": 1.7, "O": 1.37, "N": 1.45, "P": 1.49, "S": 1.7, "H": 1.0}
 
     dists_element_voxels_coords = np.sqrt(np.sum((voxels_coords - atom_coord) ** 2, axis=-1))
     # (20, 20, 20)
