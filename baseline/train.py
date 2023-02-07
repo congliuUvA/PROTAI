@@ -31,27 +31,38 @@ def training(
     checkpoint_dir = Path.cwd() / "model_checkpoints"
     checkpoint_dir.mkdir() if not checkpoint_dir.exists() else None
     for epoch in range(epochs):
+        progress_bar = tqdm(train_loader)
         model.train()
         acc_train = 0
-        for idx, data_train in tqdm(enumerate(train_loader)):
+        for idx, data_train in enumerate(tqdm(train_loader)):
             loss_train, preds, labels = train_step(
                 data_train, model, loss_func,
                 optimizer, lr_scheduler,
                 device, scaler
             )
             wandb_run.log({"loss_train": loss_train})
-            acc_train += (preds.numpy() == labels.numpy()).sum() / preds.shape[0]
+            #
+            labels_int = torch.where(labels == 1)[-1].cpu()
+            preds_int = torch.max(preds.detach(), dim=1)[-1].cpu()
+            acc_train_step = (preds_int == labels_int).sum() / preds.shape[0]
+            progress_bar.set_postfix(acc=f'{acc_train_step:.3f}')
+            acc_train += acc_train_step
         acc_train = acc_train / (idx + 1)
         wandb_run.log({"acc_train": acc_train})
 
         model.eval()
+        progress_bar = tqdm(val_loader)
         acc_val = 0
-        for idx, data_val in enumerate(tqdm(val_loader)):
+        for idx, data_val in enumerate(progress_bar):
             loss_val, preds, labels = val_step(
                 data_val, model, loss_func, device
             )
             wandb_run.log({"loss_val": loss_val})
-            acc_val += (preds.numpy() == labels.numpy()).sum() / preds.shape[0]
+            labels_int = torch.where(labels == 1)[-1].cpu()
+            preds_int = torch.max(preds.detach(), dim=1)[-1].cpu()
+            acc_val_step = (preds_int == labels_int).sum() / preds.shape[0]
+            progress_bar.set_postfix(acc=f'{acc_val_step:.3f}')
+            acc_val += acc_val_step
         acc_val = acc_val / (idx + 1)
         wandb_run.log({"acc_val": acc_val})
         update_best_checkpoint(
@@ -76,7 +87,6 @@ def train_step(data_train,
     optimizer.zero_grad()
     with torch.cuda.amp.autocast():
         preds = model(voxel_boxes)  # (bs, 20)
-        preds = torch.argmax(preds, dim=1)  # (bs,)
         loss_train = loss_func(preds, labels)
     scaler.scale(loss_train).backward()
     scaler.unscale_(optimizer)
@@ -90,16 +100,14 @@ def val_step(data_val, model, loss_func, device):
     with torch.no_grad():
         voxel_boxes, labels = data_val
         voxel_boxes, labels = voxel_boxes.to(device), labels.to(device)
-
         preds = model(voxel_boxes)  # (bs, 20)
-        preds = torch.argmax(preds, dim=1)  # (bs,)
         loss_val = loss_func(preds, labels)
     return loss_val.item(), preds, labels
 
 
 def update_best_checkpoint(acc_val, best_acc_val, epoch, checkpoint_dir, model, optimizer, lr_scheduler,):
     if acc_val > best_acc_val:
-        best_val_acc = acc_val
+        best_acc_val = acc_val
         best_checkpoint_path = checkpoint_dir / f"CNN_{epoch}_best_acc_{acc_val}.pt"
         save_checkpoint(model, optimizer, lr_scheduler, best_checkpoint_path, epoch)
     return best_acc_val, best_checkpoint_path
@@ -153,8 +161,8 @@ def main(args: DictConfig):
 
     loss_func = nn.CrossEntropyLoss()
     model = CNN(args_model.num_classes, args_model.num_channels)
-    optimizer = torch.optim.Adam(model.parameters())
-    lr_scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda _: 1.0)
+    optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
+    lr_scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda epoch: 0.99**epoch)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     for fold in range(args_model.folds):
