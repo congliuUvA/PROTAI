@@ -45,6 +45,7 @@ def data_gen(args: DictConfig):
     pdb_id_array = np.unique(np.array(dataset_split_pd.id))
 
     idx = 0
+
     total = 289756
 
     # ray tasks
