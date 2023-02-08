@@ -51,7 +51,7 @@ def data_gen(args: DictConfig):
     logger.info("Start ray tasks.")
     tasks = []
     for pdb in raw_pdb_dir.rglob("*.gz"):
-        1/3
+        # # 1/3
         if idx > int(total / 3):
             print("1/3 completed")
             break
