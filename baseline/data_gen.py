@@ -51,23 +51,32 @@ def data_gen(args: DictConfig):
     logger.info("Start ray tasks.")
     tasks = []
     for pdb in raw_pdb_dir.rglob("*.gz"):
-        # 1/3
-        if idx > int(total / 3):
-            print("1/3 completed")
+        # 1/4
+        if idx > int(total / 4):
+            print("1/4 completed")
             break
 
-        # # 2/3
-        # if idx <= int(total / 3):
+        # # 2/4
+        # if idx <= int(total / 4):
         #     idx += 1
         #     continue
-        # if idx > 2*int(total / 3):
-        #     print("2/3 completed")
+        # if idx > 2*int(total / 4):
+        #     print("2/4 completed")
         #     break
 
-        # 3/3
-        # if idx <= 2*int(total / 3):
+        # 3/4
+        # if idx <= 2*int(total / 4):
         #     idx += 1
         #     continue
+        # if idx > 3*int(total / 4):
+        #     print("3/4 completed")
+        #     break
+
+        # 3/4
+        # if idx <= 3*int(total / 4):
+        #     idx += 1
+        #     continue
+
         # unzipped pdb file name
         pdb_pure_id = pdb.name.split(".")[0]
         assembly_id = pdb.name.split(".")[1]
