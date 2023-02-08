@@ -56,18 +56,18 @@ def data_gen(args: DictConfig):
         #     print("1/3 completed")
         #     break
 
-        # 2/3
-        if idx <= int(total / 3):
-            idx += 1
-            continue
-        if idx > 2*int(total / 3):
-            print("2/3 completed")
-            break
-
-        # # 3/3
-        # if idx <= 2*int(total / 3):
+        # # 2/3
+        # if idx <= int(total / 3):
         #     idx += 1
         #     continue
+        # if idx > 2*int(total / 3):
+        #     print("2/3 completed")
+        #     break
+
+        # 3/3
+        if idx <= 2*int(total / 3):
+            idx += 1
+            continue
 
         # unzipped pdb file name
         pdb_pure_id = pdb.name.split(".")[0]
@@ -103,5 +103,5 @@ def data_gen(args: DictConfig):
 if __name__ == "__main__":
     logger.info("Data gen started!")
     if not ray.is_initialized():
-        ray.init(address='10.150.1.16:6379')
+        ray.init(address='10.150.1.11:6379')
     data_gen()
