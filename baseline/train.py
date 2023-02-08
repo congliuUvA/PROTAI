@@ -3,7 +3,7 @@ import torch
 from tqdm import tqdm
 import hydra
 import wandb
-from dataset import VoxelsDataset
+from dataset import VoxelsDataset, GaussianFilter
 from pathlib import Path
 from torch.utils.data import DataLoader
 from model.cnn.model import CNN
@@ -152,6 +152,7 @@ def main(args: DictConfig):
         hdf5_files_path=hdf5_file_path,
         dataset_split_csv_path=dataset_split_csv_path,
         val=True,
+        transform=GaussianFilter,
     )
     val_dataloader = DataLoader(
         dataset=val_set,
@@ -177,7 +178,8 @@ def main(args: DictConfig):
                 hdf5_files_path=hdf5_file_path,
                 dataset_split_csv_path=dataset_split_csv_path,
                 training=True,
-                fold=fold
+                fold=fold,
+                transform=GaussianFilter
             )
             train_dataloader = DataLoader(
                 dataset=train_set,

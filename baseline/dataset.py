@@ -7,6 +7,7 @@ from typing import Union, Tuple
 import numpy as np
 import torch
 from torch import Tensor
+import torchvision.transforms as T
 
 
 class VoxelsDataset(Dataset):
@@ -20,6 +21,7 @@ class VoxelsDataset(Dataset):
             test: bool = False,
             val: bool = False,
             fold: Union[int, None] = None,
+            transform=None,
     ):
         """Init.
 
@@ -49,6 +51,7 @@ class VoxelsDataset(Dataset):
             "SER", "THR", "TRP", "TYR", "VAL"
         ]
         self.residue_name_dic = {name: idx for idx, name in enumerate(self.residue_name)}
+        self.transform = transform
 
     def __len__(self) -> int:
         """Return the length of the dataset.
@@ -95,8 +98,37 @@ class VoxelsDataset(Dataset):
         label_idx = self.residue_name_dic[str(data.attrs["residue_name"])]
         label = torch.zeros(len(self.residue_name))
         label[label_idx] = 1.0
-        voxel = (torch.tensor(data[:]) + 0).type(torch.FloatTensor)
+        voxel = torch.tensor(data[:]) + 0
+        # use gaussian fiter
+        if self.transform:
+            voxel = self.transform(voxel)
+
         return voxel, label
+
+
+class GaussianFilter(object):
+    """Transformation for adding gaussian noise according to different types of atoms."""
+    def __init__(self):
+        """init module."""
+        self.sigma_list = [1.7, 1.45, 1.37, 1.7]  # C, N, O, S van der waals radii
+        self.kernel_size = 1
+
+    def __call__(self, img: Tensor) -> Tensor:
+        """call module.
+
+        Args:
+            img: 3D image to be transformed.
+
+        Returns:
+            img: transformed img.
+        """
+        # use gaussian filter
+        for i, channels in enumerate(img):
+            img[i] = T.GaussianBlur(kernel_size=self.kernel_size, sigma=self.sigma_list[i])(img[i])
+
+        return img
+
+
 
 
 
