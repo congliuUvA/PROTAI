@@ -64,10 +64,10 @@ def data_gen(args: DictConfig):
         #     print("2/3 completed")
         #     break
 
-        # 3/3
-        if idx <= 2*int(total / 3):
-            idx += 1
-            continue
+        # # 3/3
+        # if idx <= 2*int(total / 3):
+        #     idx += 1
+        #     continue
 
         # unzipped pdb file name
         pdb_pure_id = pdb.name.split(".")[0]
