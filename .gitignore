@@ -9,3 +9,4 @@ dataset_split_v1_0_0.csv
 **__pycache__/
 **wandb/
 *.npy
+*.DS_Store
