@@ -21,6 +21,7 @@ class VoxelsDataset(Dataset):
             test: bool = False,
             val: bool = False,
             fold: Union[int, None] = None,
+            k_fold_test: bool = False,
             transform=None,
     ):
         """Init.
@@ -32,6 +33,8 @@ class VoxelsDataset(Dataset):
             test: if the dataset is used for test or not
             val: if the dataset is used for validation or not
             fold: fold index in training set.
+            k_fold_test: set to True if the dataset is used as k-fold test set.
+            transform: transformation applied to the data set.
         """
         self.hdf5_files_path = hdf5_files_path
         self.dataset_split_csv_path = dataset_split_csv_path
@@ -43,7 +46,10 @@ class VoxelsDataset(Dataset):
         self.dataset_csv = self.dataset_csv.loc[self.dataset_csv["set"] == self.set_name]
         if self.training:
             assert fold is not None
-            self.dataset_csv = self.dataset_csv.loc[self.dataset_csv["fold"] == fold]
+            # take out all the folds except for the leftover fold if the set is not for test, else only taking out
+            # the selected fold as a test set in k-fold val.
+            self.dataset_csv = self.dataset_csv.loc[self.dataset_csv["fold"] != fold] if not k_fold_test \
+                else self.dataset_csv.loc[self.dataset_csv["fold"] == fold]
         self.residue_name = [
             "ALA", "ARG", "ASN", "ASP", "CYS",
             "GLU", "GLN", "GLY", "HIS", "ILE",
@@ -108,10 +114,10 @@ class VoxelsDataset(Dataset):
 
 class GaussianFilter(object):
     """Transformation for adding gaussian noise according to different types of atoms."""
-    def __init__(self):
+    def __init__(self, kernel_size):
         """init module."""
         self.sigma_list = [1.7, 1.45, 1.37, 1.7]  # C, N, O, S van der waals radii
-        self.kernel_size = 1
+        self.kernel_size = kernel_size
 
     def __call__(self, img: Tensor) -> Tensor:
         """call module.
