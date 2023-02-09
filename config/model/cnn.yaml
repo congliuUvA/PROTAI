@@ -1,8 +1,18 @@
 # configuration of 3DCNN
 
+# number of folds in training set.
 folds: 5
+# model name
 model_name: CNN
+# batch size
 batch_size: 20
+# number of epochs need to be run
 epochs: 9
+# number of input channels, C, N, O, S
 num_channels: 4
+# number of output predicted classes, 20 amino acids
 num_classes: 20
+# Use transformation to the data set or not (Gaussian Filter):
+use_transformation: True
+# model checkpoint path
+model_ckpt_path: model_checkpoints
