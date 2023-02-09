@@ -217,7 +217,7 @@ def generate_selected_element_voxel(
 
     # 2. selected corresponding atoms
     selected_atom_list = []
-    for atom in voxel_atom_list:
+    for atom in voxel_atom_list[1:]:
         if atom.element == selected_element and atom.element in elements_list:
             selected_atom_list.append(atom)
 
@@ -261,7 +261,7 @@ def add_atom_to_voxel(
         sasa: solvent accessible surface area array.
     """
 
-    radius_table = {"C": 0.70, "N": 0.65, "O": 0.60, "S": 1.00, "H": 0.25}
+    radius_table = {"C": 1.7, "O": 1.37, "N": 1.45, "P": 1.49, "S": 1.7, "H": 1.0}
     dists_element_voxels_coords = np.sqrt(np.sum((sub_voxel_centre_coords - atom_coord) ** 2, axis=-1))
     # (20, 20, 20)
     add_bool = np.where(dists_element_voxels_coords < radius_table[atom.element])
@@ -274,7 +274,7 @@ def add_atom_to_voxel(
     return voxels_bool, partial_charges, sasa
 
 
-@hydra.main(version_base=None, config_path="../config/voxel_box", config_name="voxel_box")
+@hydra.main(version_base=None, config_path="../../config/voxel_box", config_name="voxel_box")
 def main(arguments):
     """The main function of generating voxels."""
     # 0. Load protein structure
