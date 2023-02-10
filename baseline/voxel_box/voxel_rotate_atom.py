@@ -15,6 +15,7 @@ import h5py
 from pathlib import Path
 from Bio.PDB.PDBParser import PDBParser
 from Bio.PDB.MMCIFParser import MMCIFParser
+import os
 
 num_of_voxels = 20
 len_of_voxel = 0.8
