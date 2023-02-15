@@ -10,3 +10,4 @@ dataset_split_v1_0_0.csv
 **wandb/
 *.npy
 *.DS_Store
+baseline/data_gen_rest.py
