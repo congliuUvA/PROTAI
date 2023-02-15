@@ -57,11 +57,11 @@ def data_gen(args: DictConfig):
         #     break
 
         # # 2/2
-        if idx <= 13000:
+        if idx <= 23000:
             idx += 1
             continue
-        if idx > 14487:
-            break
+        # if idx > 14487:
+        #     break
 
         # unzipped pdb file name
         pdb_pure_id = pdb.name.split(".")[0]
