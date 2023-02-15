@@ -20,6 +20,11 @@ import os
 num_of_voxels = 20
 len_of_voxel = 0.8
 
+RES_NAME = ["ALA", "ARG", "ASN", "ASP", "CYS",
+            "GLU", "GLN", "GLY", "HIS", "ILE",
+            "LEU", "LYS", "MET", "PHE", "PRO",
+            "SER", "THR", "TRP", "TYR", "VAL"]
+
 
 def pqr2pdb(fname_pqr, fname_pdb):
 
@@ -121,16 +126,11 @@ def gen_ca_cb_vectors(struct: Bio.PDB.Structure.Structure) -> Tuple[List, List, 
 
     """
     # examine whether all central atom come from the normal amino acids
-    res_name = ["ALA", "ARG", "ASN", "ASP", "CYS",
-                "GLU", "GLN", "GLY", "HIS", "ILE",
-                "LEU", "LYS", "MET", "PHE", "PRO",
-                "SER", "THR", "TRP", "TYR", "VAL"]
-
     ca_cb_vectors = []
     ca_list, cb_list = [], []
     for res in struct.get_residues():
         # skip residue that are not AA.
-        if res.get_resname() not in res_name:
+        if res.get_resname() not in RES_NAME:
             continue
         ca_atom, c_atom, n_atom, real_cb_atom, projected_cb_atom, cb_atom_coord = [None] * 6
         for atom in res.get_atoms():
@@ -409,7 +409,7 @@ def cal_sasa(struct, pdb_name):
 
 def gen_voxel_binary_array(arguments, f, struct, pdb_name,
                            voxel_atom_lists: List, rot_mats: List,
-                           central_atom_coords: List):
+                           central_atom_coords: List, num_datasets_skip):
     """This function generates voxel binary array given the
     selected voxel atom lists and rotation matrix and central atom coordinates
 
@@ -421,10 +421,14 @@ def gen_voxel_binary_array(arguments, f, struct, pdb_name,
         voxel_atom_lists: voxel atom lists of each voxel box. (len = num of residues in total)
         rot_mats: rotation matrix of each voxel box. (len = num of residues in total)
         central_atom_coords: central atom coordinates of each box.
+        num_datasets_skip: skip the datasets that has been generated.
     """
     for idx, voxel_atom_list, rot_mat, central_atom_coord in tqdm(zip(
             np.arange(len(voxel_atom_lists)), voxel_atom_lists, rot_mats, central_atom_coords
     ), total=len(voxel_atom_lists)):
+        # skip residues that has been generated
+        if idx < num_datasets_skip:
+            continue
         # take out the central atom
         central_atom = voxel_atom_list[0]
 
@@ -479,6 +483,16 @@ def gen_voxel_binary_array(arguments, f, struct, pdb_name,
         dataset.attrs["residue_icode"] = residue_icode
 
 
+def count_res(struct: Bio.PDB.Structure.Structure) -> int:
+    """Count number of residues in the given structure."""
+    num = 0
+    for res in struct.get_residues():
+        if res.get_resname() not in RES_NAME:
+            continue
+        num += 1
+    return num
+
+
 @ray.remote
 def gen_voxel_box_file(arguments):
     """The main function of generating voxels.
@@ -491,14 +505,34 @@ def gen_voxel_box_file(arguments):
     pdb_path = str(Path.cwd().joinpath(arguments.pdb_path))
     pdb_id = arguments.pdb_id
 
-    # 0. Load protein structure
+    # Load protein structure
     struct = load_protein(arguments, pdb_name, pdb_path)
+
+    # count number if residues in the structure.
+    num_residues = count_res(struct)
 
     # start a hdf5 file
     f = h5py.File(str(Path(arguments.hdf5_file_dir) / pdb_id) + ".hdf5", "w")
 
+    # count number of dataset if hdf5 file
+    num_datasets = 0
+    for chain in f.keys():
+        for dataset in f[chain]:
+            num_datasets += 1
+
+    # if the hdf5 file is completed, skip the function
+    if num_datasets == num_residues:
+        f.close()
+        return
+
+    else:
+        assert num_datasets <= num_residues
+        num_datasets_skip = 0 if num_datasets == 0 else num_datasets - 1
+        f[chain].__delitem__(dataset) if num_datasets_skip != 0 else None
     # generate atom lists for 20*20*20 voxels, num_of_residue in pdb file in total.
     voxel_atom_lists, rot_mats, central_atom_coords = generate_voxel_atom_lists(struct)  # (num_ca, num_atoms_in_voxel)
-    gen_voxel_binary_array(arguments, f, struct, pdb_name, voxel_atom_lists, rot_mats, central_atom_coords)
+    gen_voxel_binary_array(arguments, f, struct, pdb_name,
+                           voxel_atom_lists, rot_mats, central_atom_coords,
+                           num_datasets_skip)
 
     f.close()

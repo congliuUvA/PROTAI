@@ -44,8 +44,8 @@ def data_gen(args: DictConfig):
     dataset_split_pd = pd.read_csv(str(dataset_split_csv))
     pdb_id_array = np.unique(np.array(dataset_split_pd.id))
 
-    idx = 0
-    total = 289756
+    # idx = 0
+    # total = 289756
 
     # ray tasks
     logger.info("Start ray tasks.")
@@ -65,9 +65,9 @@ def data_gen(args: DictConfig):
         #     break
 
         # 3/3
-        if idx <= 2*int(total / 3):
-            idx += 1
-            continue
+        # if idx <= 2*int(total / 3):
+        #     idx += 1
+        #     continue
 
         # unzipped pdb file name
         pdb_pure_id = pdb.name.split(".")[0]
@@ -95,7 +95,7 @@ def data_gen(args: DictConfig):
         # remove generated pdb file, clean up the mess
         # os.system(f"rm {pdb_unzip}")
         tasks.append(task)
-        idx += 1
+        # idx += 1
 
     ray.get(tasks)
 
