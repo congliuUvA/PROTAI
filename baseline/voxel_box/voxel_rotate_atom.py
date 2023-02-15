@@ -537,7 +537,7 @@ def gen_voxel_box_file(arguments, idx):
         # delete the last generated dataset and regenerate the rest of datasets.
         if num_datasets_skip != 0:
             for chain in f.keys():
-                if delete_dataset in f[chain]:
+                if str(delete_dataset) in f[chain]:
                     f[chain].__delitem__(delete_dataset)
         print(f"{str(Path(arguments.hdf5_file_dir) / pdb_id)} start from {num_datasets_skip}")
     # generate atom lists for 20*20*20 voxels, num_of_residue in pdb file in total.
