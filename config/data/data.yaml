@@ -10,4 +10,4 @@ dataset_split_csv: dataset_split_v1_0_0.csv
 use_hddtore: False
 
 # hdf5 file dir path
-hdf5_file_dir: voxels_hdf5_test
+hdf5_file_dir: voxels_hdf5
