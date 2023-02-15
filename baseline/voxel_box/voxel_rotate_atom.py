@@ -16,6 +16,9 @@ from pathlib import Path
 from Bio.PDB.PDBParser import PDBParser
 from Bio.PDB.MMCIFParser import MMCIFParser
 import os
+from ..utils import log
+
+logger = log.get_logger(__name__)
 
 num_of_voxels = 20
 len_of_voxel = 0.8
@@ -522,7 +525,7 @@ def gen_voxel_box_file(arguments):
 
     # if the hdf5 file is completed, skip the function
     if num_datasets == num_residues:
-        print(f"skip {str(Path(arguments.hdf5_file_dir) / pdb_id)}")
+        logger.info(f"skip {str(Path(arguments.hdf5_file_dir) / pdb_id)}")
         f.close()
         return
 
@@ -530,6 +533,7 @@ def gen_voxel_box_file(arguments):
         assert num_datasets <= num_residues
         num_datasets_skip = 0 if num_datasets == 0 else num_datasets - 1
         f[chain].__delitem__(dataset) if num_datasets_skip != 0 else None
+        logger.info(f"{str(Path(arguments.hdf5_file_dir) / pdb_id)} start from {num_datasets_skip}")
     # generate atom lists for 20*20*20 voxels, num_of_residue in pdb file in total.
     voxel_atom_lists, rot_mats, central_atom_coords = generate_voxel_atom_lists(struct)  # (num_ca, num_atoms_in_voxel)
     gen_voxel_binary_array(arguments, f, struct, pdb_name,
