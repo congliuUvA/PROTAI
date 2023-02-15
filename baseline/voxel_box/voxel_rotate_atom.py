@@ -527,7 +527,7 @@ def gen_voxel_box_file(arguments):
         return
 
     else:
-        assert num_datasets <= num_residues
+        assert num_datasets < num_residues
         num_datasets_skip = 0 if num_datasets == 0 else num_datasets - 1
         f[chain].__delitem__(dataset) if num_datasets_skip != 0 else None
         print(f"{str(Path(arguments.hdf5_file_dir) / pdb_id)} start from {num_datasets_skip}")
