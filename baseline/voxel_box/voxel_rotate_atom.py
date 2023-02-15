@@ -516,9 +516,11 @@ def gen_voxel_box_file(arguments):
 
     # count number of dataset if hdf5 file
     num_datasets = 0
+    dataset_name = []
     for chain in f.keys():
         for dataset in f[chain]:
             num_datasets += 1
+            dataset_name.append(dataset)
 
     # if the hdf5 file is completed, skip the function
     if num_datasets == num_residues:
@@ -529,7 +531,9 @@ def gen_voxel_box_file(arguments):
     else:
         assert num_datasets < num_residues
         num_datasets_skip = 0 if num_datasets == 0 else num_datasets - 1
-        f[chain].__delitem__(dataset) if num_datasets_skip != 0 else None
+        dataset_name = np.array(dataset_name, dtype=np.int)
+        delete_dataset = dataset_name[np.argmax(dataset_name)]
+        f[chain].__delitem__(delete_dataset) if num_datasets_skip != 0 else None
         print(f"{str(Path(arguments.hdf5_file_dir) / pdb_id)} start from {num_datasets_skip}")
     # generate atom lists for 20*20*20 voxels, num_of_residue in pdb file in total.
     voxel_atom_lists, rot_mats, central_atom_coords = generate_voxel_atom_lists(struct)  # (num_ca, num_atoms_in_voxel)

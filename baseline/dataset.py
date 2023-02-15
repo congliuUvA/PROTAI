@@ -58,6 +58,7 @@ class VoxelsDataset(Dataset):
         ]
         self.residue_name_dic = {name: idx for idx, name in enumerate(self.residue_name)}
         self.transform = transform
+        self.updated_csv = None
 
     def __len__(self) -> int:
         """Return the length of the dataset.
@@ -68,16 +69,22 @@ class VoxelsDataset(Dataset):
         # length accumulate list, prepared for indexing specific box in the data set.
         self.len_accumulate_list = []
         length = 0
+        delete_row_idx = []
         # iterate through all files in sub set
-        for idx, row in self.dataset_csv.iterrows():
+        for idx, row in self.dataset_csv.itertuples():
             pdb_full_id = row["full_id"]
             chain = pdb_full_id.split("_")[-1]
             pdb_id = row["id"]
-            hdf5_file = f"{pdb_id}_pdb1.hdf5"
+            hdf5_file = self.hdf5_files_path / f"{pdb_id}_pdb1.hdf5"
+            if not hdf5_file.exists():
+                delete_row_idx.append(idx)
+                continue
             f = h5py.File(hdf5_file, "r")
             # each box count as one data sample
             length += len(f[chain].keys())
             self.len_accumulate_list.append(length)
+        if not self.updated_csv:
+            self.updated_csv = self.dataset_csv.drop(index=delete_row_idx)
         return length
 
     def __getitem__(self, idx: int) -> Tuple[Tensor, Tensor]:
@@ -91,12 +98,12 @@ class VoxelsDataset(Dataset):
         """
         # given one specific data instance idx, find the corresponding position in
         # accumulated length list, the idx + 1 represents the index of the row in the csv file
-        row_idx = np.where(np.array(self.len_accumulate_list) <= idx)[0][-1] + 1 \
+        row_idx = np.where(np.array(self.len_accumulate_list) <= idx)[0][0] + 1 \
             if idx >= self.len_accumulate_list[0] else 0
         # use the given idx to minus the last accumulated length to derive the residual index in
         # the row hdf5 file
         residue_idx = idx - self.len_accumulate_list[row_idx - 1] if row_idx > 0 else idx
-        row = self.dataset_csv.iloc[row_idx]
+        row = self.updated_csv.iloc[row_idx]
         hdf5_file = f"{row.id}_pdb1.hdf5"
         chain_id = row.full_id.split("_")[-1]
         f = h5py.File(hdf5_file, "r")
