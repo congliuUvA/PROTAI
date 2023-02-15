@@ -512,14 +512,14 @@ def gen_voxel_box_file(arguments):
     num_residues = count_res(struct)
 
     # start a hdf5 file
-    f = h5py.File(str(Path(arguments.hdf5_file_dir) / pdb_id) + ".hdf5", "w")
+    f = h5py.File(str(Path(arguments.hdf5_file_dir) / pdb_id) + ".hdf5", "a")
 
     # count number of dataset if hdf5 file
     num_datasets = 0
     for chain in f.keys():
         for dataset in f[chain]:
             num_datasets += 1
-    print(f"{num_datasets} in str(Path(arguments.hdf5_file_dir) / pdb_id)")
+    print(f"{num_datasets} in {str(Path(arguments.hdf5_file_dir) / pdb_id)}")
 
     # if the hdf5 file is completed, skip the function
     if num_datasets == num_residues:
