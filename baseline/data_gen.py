@@ -58,7 +58,6 @@ def data_gen(args: DictConfig):
 
         # # 2/2
         # if idx <= int(total / 2):
-        #     logger.info(f"Skip file {pdb.name} with index: {idx}")
         #     idx += 1
         #     continue
 
@@ -79,13 +78,12 @@ def data_gen(args: DictConfig):
         args_voxel_box.pdb_name = pdb_pure_id
         args_voxel_box.pdb_path = pdb_unzip
         args_voxel_box.pdb_id = pdb_id
-        logger.info(f"Dealing with file {pdb} with index: {idx}")
-        task = gen_voxel_box_file.remote(args_voxel_box)
+        task = gen_voxel_box_file.remote(args_voxel_box, idx)
 
         # remove generated pdb file, clean up the mess
         # os.system(f"rm {pdb_unzip}")
         tasks.append(task)
-        # idx += 1
+        idx += 1
 
     ray.get(tasks)
 

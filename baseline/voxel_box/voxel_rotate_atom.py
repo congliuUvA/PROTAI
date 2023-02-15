@@ -494,13 +494,14 @@ def count_res(struct: Bio.PDB.Structure.Structure) -> int:
 
 
 @ray.remote
-def gen_voxel_box_file(arguments):
+def gen_voxel_box_file(arguments, idx):
     """The main function of generating voxels.
 
     Args:
         arguments: arguments input from user.
     """
     # configuration set up
+    print(f"Dealing with file index: {idx}")
     pdb_name = arguments.pdb_name
     pdb_path = str(Path.cwd().joinpath(arguments.pdb_path))
     pdb_id = arguments.pdb_id
