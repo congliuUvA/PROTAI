@@ -11,3 +11,6 @@ use_hddtore: False
 
 # hdf5 file dir path
 hdf5_file_dir: voxels_hdf5
+
+# smaller hdf5 file dir path
+smaller_hdf5_file_dir: smaller_voxels_hdf5
