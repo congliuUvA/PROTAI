@@ -50,5 +50,7 @@ def data_gen_smaller(args: DictConfig):
             num_val += 1
 
 
+if __name__ == "__main__":
+    data_gen_smaller()
 
 
