@@ -16,9 +16,6 @@ from pathlib import Path
 from Bio.PDB.PDBParser import PDBParser
 from Bio.PDB.MMCIFParser import MMCIFParser
 import os
-from ..utils import log
-
-logger = log.get_logger(__name__)
 
 num_of_voxels = 20
 len_of_voxel = 0.8
@@ -497,7 +494,7 @@ def count_res(struct: Bio.PDB.Structure.Structure) -> int:
 
 
 @ray.remote
-def gen_voxel_box_file(arguments):
+def gen_voxel_box_file(arguments, logger):
     """The main function of generating voxels.
 
     Args:
