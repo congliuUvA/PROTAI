@@ -58,6 +58,7 @@ def data_gen(args: DictConfig):
 
         # 2/2
         if idx <= int(total / 2):
+            logger.info(f"Skip file {pdb.name} with index: {idx}")
             idx += 1
             continue
 
@@ -78,6 +79,7 @@ def data_gen(args: DictConfig):
         args_voxel_box.pdb_name = pdb_pure_id
         args_voxel_box.pdb_path = pdb_unzip
         args_voxel_box.pdb_id = pdb_id
+        logger.info(f"Dealing with file {pdb} with index: {idx}")
         task = gen_voxel_box_file.remote(args_voxel_box)
 
         # remove generated pdb file, clean up the mess
@@ -91,5 +93,5 @@ def data_gen(args: DictConfig):
 if __name__ == "__main__":
     logger.info("Data gen started!")
     if not ray.is_initialized():
-        ray.init(address='10.150.1.16:6379')
+        ray.init(address='10.150.1.8:6379')
     data_gen()
