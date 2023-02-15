@@ -78,10 +78,6 @@ def data_gen(args: DictConfig):
         if pdb_pure_id not in pdb_id_array:
             continue
 
-        # if corresponding hdf5 file has been created, skip the pdb file.
-        if (hdf5_file_dir.joinpath(pdb_id + ".hdf5")).exists():
-            continue
-
         # unzip pdb file
         pdb_unzip = ".".join(str(pdb).split(".")[:-1])
         os.system(f"gunzip -c {pdb} > {pdb_unzip}")
