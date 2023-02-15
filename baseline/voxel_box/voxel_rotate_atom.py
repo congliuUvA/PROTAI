@@ -423,9 +423,9 @@ def gen_voxel_binary_array(arguments, f, struct, pdb_name,
         central_atom_coords: central atom coordinates of each box.
         num_datasets_skip: skip the datasets that has been generated.
     """
-    for idx, voxel_atom_list, rot_mat, central_atom_coord in zip(
+    for idx, voxel_atom_list, rot_mat, central_atom_coord in tqdm(zip(
             np.arange(len(voxel_atom_lists)), voxel_atom_lists, rot_mats, central_atom_coords
-    ):
+    ), total=len(voxel_atom_lists)):
         # skip residues that has been generated
         if idx < num_datasets_skip:
             continue
@@ -519,7 +519,6 @@ def gen_voxel_box_file(arguments):
     for chain in f.keys():
         for dataset in f[chain]:
             num_datasets += 1
-    print(f"{num_datasets} in {str(Path(arguments.hdf5_file_dir) / pdb_id)}")
 
     # if the hdf5 file is completed, skip the function
     if num_datasets == num_residues:
