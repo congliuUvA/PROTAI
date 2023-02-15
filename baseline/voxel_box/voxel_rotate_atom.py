@@ -519,6 +519,7 @@ def gen_voxel_box_file(arguments):
     for chain in f.keys():
         for dataset in f[chain]:
             num_datasets += 1
+    print(f"{num_datasets} in str(Path(arguments.hdf5_file_dir) / pdb_id)")
 
     # if the hdf5 file is completed, skip the function
     if num_datasets == num_residues:
