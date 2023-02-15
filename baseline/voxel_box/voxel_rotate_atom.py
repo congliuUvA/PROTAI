@@ -522,6 +522,7 @@ def gen_voxel_box_file(arguments):
 
     # if the hdf5 file is completed, skip the function
     if num_datasets == num_residues:
+        print(f"skip {str(Path(arguments.hdf5_file_dir) / pdb_id)}")
         f.close()
         return
 
