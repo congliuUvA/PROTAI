@@ -494,7 +494,7 @@ def count_res(struct: Bio.PDB.Structure.Structure) -> int:
 
 
 @ray.remote
-def gen_voxel_box_file(arguments, logger):
+def gen_voxel_box_file(arguments):
     """The main function of generating voxels.
 
     Args:
@@ -522,7 +522,7 @@ def gen_voxel_box_file(arguments, logger):
 
     # if the hdf5 file is completed, skip the function
     if num_datasets == num_residues:
-        logger.info(f"skip {str(Path(arguments.hdf5_file_dir) / pdb_id)}")
+        print(f"skip {str(Path(arguments.hdf5_file_dir) / pdb_id)}")
         f.close()
         return
 
@@ -530,7 +530,7 @@ def gen_voxel_box_file(arguments, logger):
         assert num_datasets <= num_residues
         num_datasets_skip = 0 if num_datasets == 0 else num_datasets - 1
         f[chain].__delitem__(dataset) if num_datasets_skip != 0 else None
-        logger.info(f"{str(Path(arguments.hdf5_file_dir) / pdb_id)} start from {num_datasets_skip}")
+        print(f"{str(Path(arguments.hdf5_file_dir) / pdb_id)} start from {num_datasets_skip}")
     # generate atom lists for 20*20*20 voxels, num_of_residue in pdb file in total.
     voxel_atom_lists, rot_mats, central_atom_coords = generate_voxel_atom_lists(struct)  # (num_ca, num_atoms_in_voxel)
     gen_voxel_binary_array(arguments, f, struct, pdb_name,
