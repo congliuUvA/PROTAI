@@ -56,9 +56,10 @@ def extract_dataset(dataset_csv: pd.DataFrame, hdf5_file_dir: Path,
     for idx, row in enumerate(dataset_csv.itertuples()):
         # if number of data (in chain level) exceeds the defined threshold, data set extraction complete.
         tasks.append(copy_data_instance.remote(hdf5_file_dir, smaller_hdf5_file_dir, row.full_id, row.id))
-        if idx % 1000 == 999:
+        if idx % 10 == 9:
             num_data_in_tasks = ray.get(tasks)
             num_data += np.sum(num_data_in_tasks)
+            tasks = []
             if num_data >= threshold:
                 break
 
@@ -89,7 +90,8 @@ def data_gen_smaller(args: DictConfig):
     test_csv = dataset_csv.loc[dataset_csv["set"] == "test"]
     val_csv = dataset_csv.loc[dataset_csv["set"] == "validation"]
 
-    num_train_th, num_test_th, num_val_th = 80000, test_csv.size, 10000
+    # num_train_th, num_test_th, num_val_th = 80000, test_csv.size, 10000
+    num_train_th, num_test_th, num_val_th = 80, 10, 10
 
     logger.info(f"Aimed training, test, val set data points: {num_train_th}, {num_test_th}, {num_val_th}")
 
