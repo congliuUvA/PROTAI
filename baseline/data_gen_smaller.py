@@ -30,7 +30,7 @@ def extract_dataset(dataset_csv: pd.DataFrame, hdf5_file_dir: Path,
     """
     logger.info(f"extracting {dataset_name} set.")
     num_data = 0
-    for idx, row in enumerate(tqdm(dataset_csv.itertuples(), total=threshold)):
+    for idx, row in enumerate(dataset_csv.itertuples()):
         # if number of data (in chain level) exceeds the defined threshold, data set extraction complete.
         if num_data >= threshold:
             break
@@ -80,7 +80,9 @@ def data_gen_smaller(args: DictConfig):
     test_csv = dataset_csv.loc[dataset_csv["set"] == "test"]
     val_csv = dataset_csv.loc[dataset_csv["set"] == "validation"]
 
-    num_train_th, num_test_th, num_val_th = 80000, np.inf, 10000
+    num_train_th, num_test_th, num_val_th = 80000, test_csv.size, 10000
+
+    logger.info(f"Aimed training, test, val set data points: {num_train_th}, {num_test_th}, {num_val_th}")
 
     extract_dataset(dataset_csv=train_csv,
                     hdf5_file_dir=hdf5_file_dir,
