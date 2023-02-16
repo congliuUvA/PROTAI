@@ -493,7 +493,7 @@ def count_res(struct: Bio.PDB.Structure.Structure) -> int:
     return num
 
 
-@ray.remote
+# @ray.remote
 def gen_voxel_box_file(arguments, idx):
     """The main function of generating voxels.
 
@@ -523,7 +523,7 @@ def gen_voxel_box_file(arguments, idx):
         for dataset in f[chain]:
             num_datasets += 1
             dataset_name.append(dataset)
-
+    print("before", num_datasets, num_residues)
     # if the hdf5 file is completed, skip the function
     if num_datasets == num_residues:
         print(f"skip {str(Path(arguments.hdf5_file_dir) / pdb_id)}")
@@ -546,5 +546,12 @@ def gen_voxel_box_file(arguments, idx):
     gen_voxel_binary_array(arguments, f, struct, pdb_name,
                            voxel_atom_lists, rot_mats, central_atom_coords,
                            num_datasets_skip)
+    num_datasets = 0
+    dataset_name = []
+    for chain in f.keys():
+        for dataset in f[chain]:
+            num_datasets += 1
+            dataset_name.append(dataset)
+    print("after:", num_datasets, num_residues)
 
     f.close()
