@@ -89,7 +89,7 @@ def data_gen_smaller(args: DictConfig):
     test_csv = dataset_csv.loc[dataset_csv["set"] == "test"]
     val_csv = dataset_csv.loc[dataset_csv["set"] == "validation"]
 
-    num_train_th, num_test_th, num_val_th = 800, test_csv.size, 10000
+    num_train_th, num_test_th, num_val_th = 80, 10, 10
 
     logger.info(f"Aimed training, test, val set data points: {num_train_th}, {num_test_th}, {num_val_th}")
 
