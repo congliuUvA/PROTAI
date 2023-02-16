@@ -35,6 +35,7 @@ def copy_data_instance(hdf5_file_dir, smaller_hdf5_file_dir, pdb_full_id, pdb_id
         # only in the required chain in the pdb file will count as the data point.
         if chain in f.keys():
             num_copied_data += 1
+        f.close()
     return num_copied_data
 
 
