@@ -58,8 +58,8 @@ def extract_dataset(dataset_csv: pd.DataFrame, hdf5_file_dir: Path,
         tasks.append(copy_data_instance.remote(hdf5_file_dir, smaller_hdf5_file_dir, row.full_id, row.id))
         if idx % 10 == 9:
             num_data_in_tasks = ray.get(tasks)
-            tasks = []
             print(len(tasks), num_data_in_tasks)
+            tasks = []
             num_data += np.sum(num_data_in_tasks)
             if num_data >= threshold:
                 break
