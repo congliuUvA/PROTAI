@@ -30,7 +30,7 @@ def copy_data_instance(hdf5_file_dir, smaller_hdf5_file_dir, pdb_full_id, pdb_id
             os.system(f"rsync -avz {hdf5_file_whole_set} {hdf5_file_smaller_set}")
 
         chain = pdb_full_id.split("_")[-1]
-        f = h5py.File(hdf5_file_whole_set)
+        f = h5py.File(hdf5_file_whole_set, "r")
 
         # only in the required chain in the pdb file will count as the data point.
         if chain in f.keys():
