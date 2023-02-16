@@ -51,10 +51,10 @@ def data_gen(args: DictConfig):
     logger.info("Start ray tasks.")
     tasks = []
     for pdb in raw_pdb_dir.rglob("*.gz"):
-        #  1/2
-        # if idx > int(total / 2):
-        #     print("1/2 completed")
-        #     break
+        # 1/2
+        if idx > int(total / 2):
+            print("1/2 completed")
+            break
 
         # # 2/2
         # if idx <= int(total / 2):
@@ -78,11 +78,10 @@ def data_gen(args: DictConfig):
         args_voxel_box.pdb_name = pdb_pure_id
         args_voxel_box.pdb_path = pdb_unzip
         args_voxel_box.pdb_id = pdb_id
-        # task = gen_voxel_box_file.remote(args_voxel_box, idx)
-        gen_voxel_box_file(args_voxel_box, idx)
-        # remove generated pdb file, clean up the mess
-        # os.system(f"rm {pdb_unzip}")
-        # tasks.append(task)
+
+        task = gen_voxel_box_file.remote(args_voxel_box, idx)
+        tasks.append(task)
+
         idx += 1
 
     ray.get(tasks)

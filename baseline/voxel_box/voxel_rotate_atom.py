@@ -409,7 +409,7 @@ def cal_sasa(struct, pdb_name):
 
 def gen_voxel_binary_array(arguments, f, struct, pdb_name,
                            voxel_atom_lists: List, rot_mats: List,
-                           central_atom_coords: List, num_datasets_skip):
+                           central_atom_coords: List):
     """This function generates voxel binary array given the
     selected voxel atom lists and rotation matrix and central atom coordinates
 
@@ -421,14 +421,10 @@ def gen_voxel_binary_array(arguments, f, struct, pdb_name,
         voxel_atom_lists: voxel atom lists of each voxel box. (len = num of residues in total)
         rot_mats: rotation matrix of each voxel box. (len = num of residues in total)
         central_atom_coords: central atom coordinates of each box.
-        num_datasets_skip: skip the datasets that has been generated.
     """
     for idx, voxel_atom_list, rot_mat, central_atom_coord in tqdm(zip(
             np.arange(len(voxel_atom_lists)), voxel_atom_lists, rot_mats, central_atom_coords
     ), total=len(voxel_atom_lists)):
-        # skip residues that has been generated
-        if idx < num_datasets_skip:
-            continue
         # take out the central atom
         central_atom = voxel_atom_list[0]
 
@@ -493,7 +489,7 @@ def count_res(struct: Bio.PDB.Structure.Structure) -> int:
     return num
 
 
-# @ray.remote
+@ray.remote
 def gen_voxel_box_file(arguments, idx):
     """The main function of generating voxels.
 
@@ -512,46 +508,25 @@ def gen_voxel_box_file(arguments, idx):
     num_residues = count_res(struct)
 
     # start a hdf5 file
-    f = h5py.File(str(Path(arguments.hdf5_file_dir) / pdb_id) + ".hdf5", "a")
+    f = h5py.File(str(Path(arguments.hdf5_file_dir) / pdb_id) + ".hdf5", "r")
 
     print(f"Dealing with file index: {idx}, {str(Path(arguments.hdf5_file_dir) / pdb_id) + '.hdf5'}")
 
     # count number of dataset if hdf5 file
-    num_datasets = 0
-    dataset_name = []
-    for chain in f.keys():
-        for dataset in f[chain]:
-            num_datasets += 1
-            dataset_name.append(dataset)
-    print("before", num_datasets, num_residues)
+    num_datasets = len([box for chain in f.keys() for box in f[chain]])
+    f.close()
     # if the hdf5 file is completed, skip the function
     if num_datasets == num_residues:
         print(f"skip {str(Path(arguments.hdf5_file_dir) / pdb_id)}")
-        f.close()
         return
 
     else:
-        assert num_datasets < num_residues
-        num_datasets_skip = 0 if num_datasets == 0 else num_datasets - 1
-        # delete the last generated dataset and regenerate the rest of datasets.
-        if num_datasets != 0:
-            dataset_name = np.array(dataset_name, dtype=np.int)
-            delete_dataset = dataset_name[np.argmax(dataset_name)]
-            for chain in f.keys():
-                if str(delete_dataset) in f[chain]:
-                    f[chain].__delitem__(str(delete_dataset))
-        print(f"{str(Path(arguments.hdf5_file_dir) / pdb_id)} start from {num_datasets_skip}")
-    # generate atom lists for 20*20*20 voxels, num_of_residue in pdb file in total.
-    voxel_atom_lists, rot_mats, central_atom_coords = generate_voxel_atom_lists(struct)  # (num_ca, num_atoms_in_voxel)
-    gen_voxel_binary_array(arguments, f, struct, pdb_name,
-                           voxel_atom_lists, rot_mats, central_atom_coords,
-                           num_datasets_skip)
-    num_datasets = 0
-    dataset_name = []
-    for chain in f.keys():
-        for dataset in f[chain]:
-            num_datasets += 1
-            dataset_name.append(dataset)
-    print("after:", num_datasets, num_residues)
+        f = h5py.File(str(Path(arguments.hdf5_file_dir) / pdb_id) + ".hdf5", "w")
+        # generate atom lists for 20*20*20 voxels, num_of_residue in pdb file in total.
+        (
+            voxel_atom_lists, rot_mats, central_atom_coords
+        ) = generate_voxel_atom_lists(struct) # (num_ca, num_atoms_in_voxel)
 
-    f.close()
+        gen_voxel_binary_array(arguments, f, struct, pdb_name,
+                               voxel_atom_lists, rot_mats, central_atom_coords)
+        f.close()
