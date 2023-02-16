@@ -1,4 +1,7 @@
-"""This module is for generating a smaller dataset 60000, 10000, 10000 for train/test/val dataset."""
+"""This module is for generating a smaller dataset 60000, 10000, 10000 for train/test/val dataset.
+
+Only run this module after running deduplicate.py
+"""
 
 import os
 import hydra
@@ -6,6 +9,49 @@ import pandas as pd
 from omegaconf import DictConfig
 from pathlib import Path
 import numpy as np
+from tqdm import tqdm
+from utils import log
+import h5py
+
+logger = log.get_logger(__name__)
+
+
+def extract_dataset(dataset_csv: pd.DataFrame, hdf5_file_dir: Path,
+                    smaller_hdf5_file_dir: Path, threshold: int,
+                    dataset_name: str):
+    """This function is used to extract (copy) hdf5 file from voxel_hdf5 to smaller_voxel_hdf5
+
+    Args:
+        dataset_csv: csv used as a reference to copy data.
+        hdf5_file_dir: directory of voxel hdf5.
+        smaller_hdf5_file_dir: directory of smaller voxel hdf5.
+        threshold: threshold of number of data (in chain level).
+        dataset_name: name of the aiming dataset.
+    """
+    logger.info(f"extracting {dataset_name} set.")
+    num_data = 0
+    for idx, row in enumerate(tqdm(dataset_csv.itertuples(), total=len(dataset_csv.index))):
+        # if number of data (in chain level) exceeds the defined threshold, data set extraction complete.
+        if num_data >= threshold:
+            break
+        pdb_id = row.id
+        # always extract pdb1 because the largest file is pdb1.
+        hdf5_file_whole_set = hdf5_file_dir / f"{pdb_id}_pdb1.hdf5"
+        hdf5_file_smaller_set = smaller_hdf5_file_dir / hdf5_file_whole_set.name
+
+        # if the pdb file exists, copy the pdb file to smaller dataset.
+        if hdf5_file_whole_set.exists():
+            if not hdf5_file_smaller_set.exists():
+                os.system(f"cp {hdf5_file_whole_set} {hdf5_file_smaller_set}")
+
+            pdb_full_id = row.full_id
+            chain = pdb_full_id.split("_")[-1]
+            f = h5py.File(hdf5_file_whole_set)
+
+            # only in the required chain in the pdb file will count as the data point.
+            if chain in f.keys():
+                num_data += 1
+            f.close()
 
 
 @hydra.main(version_base=None, config_path="../config", config_name="config")
@@ -30,24 +76,29 @@ def data_gen_smaller(args: DictConfig):
     smaller_hdf5_file_dir = root_dir / Path(args_data.smaller_hdf5_file_dir)
     smaller_hdf5_file_dir.mkdir() if not smaller_hdf5_file_dir.exists() else None
 
-    train_pdb_id = np.unique(np.array(dataset_csv.loc[dataset_csv["set"] == "training"].id))
-    test_pdb_id = np.unique(np.array(dataset_csv.loc[dataset_csv["set"] == "test"].id))
-    val_pdb_id = np.unique(np.array(dataset_csv.loc[dataset_csv["set"] == "validation"].id))
+    train_csv = dataset_csv.loc[dataset_csv["set"] == "training"]
+    test_csv = dataset_csv.loc[dataset_csv["set"] == "test"]
+    val_csv = dataset_csv.loc[dataset_csv["set"] == "validation"]
 
-    num_train, num_test, num_val = 0, 0, 0
-    num_train_th, num_test_th, num_val_th = 200, 100, 100
+    num_train_th, num_test_th, num_val_th = 80000, np.inf, 10000
 
-    for pdb_hdf5 in hdf5_file_dir.rglob("*_pdb1.hdf5"):
-        pure_pdb_id = pdb_hdf5.name.split(".")[0].split("_")[0]
-        if pure_pdb_id in train_pdb_id and num_train < num_train_th:
-            os.system(f"cp {pdb_hdf5} {smaller_hdf5_file_dir / pdb_hdf5.name}")
-            num_train += 1
-        if pure_pdb_id in test_pdb_id and num_test < num_test_th:
-            os.system(f"cp {pdb_hdf5} {smaller_hdf5_file_dir / pdb_hdf5.name}")
-            num_test += 1
-        if pure_pdb_id in val_pdb_id and num_val < num_val_th:
-            os.system(f"cp {pdb_hdf5} {smaller_hdf5_file_dir / pdb_hdf5.name}")
-            num_val += 1
+    extract_dataset(dataset_csv=train_csv,
+                    hdf5_file_dir=hdf5_file_dir,
+                    smaller_hdf5_file_dir=smaller_hdf5_file_dir,
+                    threshold=num_train_th,
+                    dataset_name="train")
+
+    extract_dataset(dataset_csv=test_csv,
+                    hdf5_file_dir=hdf5_file_dir,
+                    smaller_hdf5_file_dir=smaller_hdf5_file_dir,
+                    threshold=num_test_th,
+                    dataset_name="test")
+
+    extract_dataset(dataset_csv=val_csv,
+                    hdf5_file_dir=hdf5_file_dir,
+                    smaller_hdf5_file_dir=smaller_hdf5_file_dir,
+                    threshold=num_val_th,
+                    dataset_name="validation")
 
 
 if __name__ == "__main__":
