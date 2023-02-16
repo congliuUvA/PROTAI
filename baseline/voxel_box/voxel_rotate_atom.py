@@ -493,7 +493,7 @@ def count_res(struct: Bio.PDB.Structure.Structure) -> int:
     return num
 
 
-@ray.remote
+# @ray.remote
 def gen_voxel_box_file(arguments, idx):
     """The main function of generating voxels.
 
@@ -514,6 +514,8 @@ def gen_voxel_box_file(arguments, idx):
     # start a hdf5 file
     f = h5py.File(str(Path(arguments.hdf5_file_dir) / pdb_id) + ".hdf5", "a")
 
+    print(f"Dealing with file index: {idx}, {str(Path(arguments.hdf5_file_dir) / pdb_id) + '.hdf5'}")
+
     # count number of dataset if hdf5 file
     num_datasets = 0
     dataset_name = []
@@ -530,7 +532,6 @@ def gen_voxel_box_file(arguments, idx):
         return
 
     else:
-        print(f"Dealing with file index: {idx}, {str(Path(arguments.hdf5_file_dir) / pdb_id) + '.hdf5'}")
         assert num_datasets < num_residues
         num_datasets_skip = 0 if num_datasets == 0 else num_datasets - 1
         dataset_name = np.array(dataset_name, dtype=np.int)
