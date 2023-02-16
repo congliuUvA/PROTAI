@@ -113,4 +113,7 @@ def data_gen_smaller(args: DictConfig):
 
 
 if __name__ == "__main__":
+    logger.info("Data gen started!")
+    if not ray.is_initialized():
+        ray.init(address='10.150.1.7:6379')
     data_gen_smaller()
