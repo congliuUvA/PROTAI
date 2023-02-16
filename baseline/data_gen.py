@@ -52,7 +52,7 @@ def data_gen(args: DictConfig):
     tasks = []
     for pdb in raw_pdb_dir.rglob("*.gz"):
         # 1/2
-        if idx <= 140000:
+        if idx <= 144000:
             idx += 1
             continue
         if idx > int(total / 2):
