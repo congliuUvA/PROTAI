@@ -493,7 +493,7 @@ def count_res(struct: Bio.PDB.Structure.Structure) -> int:
     return num
 
 
-# @ray.remote
+@ray.remote
 def gen_voxel_box_file(arguments, idx):
     """The main function of generating voxels.
 
@@ -533,10 +533,10 @@ def gen_voxel_box_file(arguments, idx):
     else:
         assert num_datasets < num_residues
         num_datasets_skip = 0 if num_datasets == 0 else num_datasets - 1
-        dataset_name = np.array(dataset_name, dtype=np.int)
-        delete_dataset = dataset_name[np.argmax(dataset_name)]
         # delete the last generated dataset and regenerate the rest of datasets.
         if num_datasets_skip != 0:
+            dataset_name = np.array(dataset_name, dtype=np.int)
+            delete_dataset = dataset_name[np.argmax(dataset_name)]
             for chain in f.keys():
                 if str(delete_dataset) in f[chain]:
                     f[chain].__delitem__(str(delete_dataset))
