@@ -60,7 +60,7 @@ def data_gen_smaller(args: DictConfig):
     # configuration assignment
     args_data = args.data
     args_voxel_box = args.voxel_box
-    baseline_dir = Path.cwd()  # baseline/
+    baseline_dir = Path.cwd().parent  # baseline/
     root_dir = baseline_dir.parent if not args_data.use_hddtore else "/hddstore/cliu3"
 
     # dataset split csv path
@@ -69,7 +69,7 @@ def data_gen_smaller(args: DictConfig):
     # dataset csv
     dataset_csv = pd.read_csv(str(dataset_split_csv))
 
-    # create a directory for hdf5 files
+    # directory for hdf5 files
     hdf5_file_dir = root_dir / Path(args_data.hdf5_file_dir)
 
     # create a directory for new hdf5_files
