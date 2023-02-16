@@ -11,3 +11,4 @@ dataset_split_v1_0_0.csv
 *.npy
 *.DS_Store
 baseline/data_gen_rest.py
+*.hdf5
