@@ -59,10 +59,10 @@ def data_gen(args: DictConfig):
         #     print("1/2 completed")
         #     break
 
-        # # # 2/2
-        # if idx <= 284000:
-        #     idx += 1
-        #     continue
+        # # 2/2
+        if idx <= 284000:
+            idx += 1
+            continue
 
         # unzipped pdb file name
         pdb_pure_id = pdb.name.split(".")[0]
