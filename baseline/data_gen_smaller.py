@@ -30,7 +30,7 @@ def extract_dataset(dataset_csv: pd.DataFrame, hdf5_file_dir: Path,
     """
     logger.info(f"extracting {dataset_name} set.")
     num_data = 0
-    for idx, row in enumerate(tqdm(dataset_csv.itertuples(), total=len(dataset_csv.index))):
+    for idx, row in enumerate(tqdm(dataset_csv.itertuples(), total=threshold)):
         # if number of data (in chain level) exceeds the defined threshold, data set extraction complete.
         if num_data >= threshold:
             break
