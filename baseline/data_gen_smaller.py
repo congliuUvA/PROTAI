@@ -16,6 +16,26 @@ import h5py
 logger = log.get_logger(__name__)
 
 
+def copy_data(hdf5_file_dir, smaller_hdf5_file_dir, pdb_id, pdb_full_id, )
+    # always extract pdb1 because the largest file is pdb1.
+    hdf5_file_whole_set = hdf5_file_dir / f"{pdb_id}_pdb1.hdf5"
+    hdf5_file_smaller_set = smaller_hdf5_file_dir / hdf5_file_whole_set.name
+
+    # if the pdb file exists, copy the pdb file to smaller dataset.
+    if hdf5_file_whole_set.exists():
+        if not hdf5_file_smaller_set.exists():
+            os.system(f"cp {hdf5_file_whole_set} {hdf5_file_smaller_set}")
+
+        pdb_full_id = row.full_id
+        chain = pdb_full_id.split("_")[-1]
+        f = h5py.File(hdf5_file_whole_set)
+
+        # only in the required chain in the pdb file will count as the data point.
+        if chain in f.keys():
+            num_data += 1
+        f.close()
+
+
 def extract_dataset(dataset_csv: pd.DataFrame, hdf5_file_dir: Path,
                     smaller_hdf5_file_dir: Path, threshold: int,
                     dataset_name: str):
@@ -42,7 +62,7 @@ def extract_dataset(dataset_csv: pd.DataFrame, hdf5_file_dir: Path,
         # if the pdb file exists, copy the pdb file to smaller dataset.
         if hdf5_file_whole_set.exists():
             if not hdf5_file_smaller_set.exists():
-                os.system(f"cp {hdf5_file_whole_set} {hdf5_file_smaller_set}")
+                os.system(f"rsync -avz {hdf5_file_whole_set} {hdf5_file_smaller_set}")
 
             pdb_full_id = row.full_id
             chain = pdb_full_id.split("_")[-1]
