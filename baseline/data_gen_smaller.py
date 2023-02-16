@@ -12,8 +12,30 @@ import numpy as np
 from tqdm import tqdm
 from utils import log
 import h5py
+import ray
 
 logger = log.get_logger(__name__)
+
+
+@ray.remote
+def copy_data_instance(hdf5_file_dir, smaller_hdf5_file_dir, pdb_full_id, pdb_id):
+    num_copied_data = 0
+    # always extract pdb1 because the largest file is pdb1.
+    hdf5_file_whole_set = hdf5_file_dir / f"{pdb_id}_pdb1.hdf5"
+    hdf5_file_smaller_set = smaller_hdf5_file_dir / hdf5_file_whole_set.name
+
+    # if the pdb file exists, copy the pdb file to smaller dataset.
+    if hdf5_file_whole_set.exists():
+        if not hdf5_file_smaller_set.exists():
+            os.system(f"rsync -avz {hdf5_file_whole_set} {hdf5_file_smaller_set}")
+
+        chain = pdb_full_id.split("_")[-1]
+        f = h5py.File(hdf5_file_whole_set)
+
+        # only in the required chain in the pdb file will count as the data point.
+        if chain in f.keys():
+            num_copied_data += 1
+    return num_copied_data
 
 
 def extract_dataset(dataset_csv: pd.DataFrame, hdf5_file_dir: Path,
@@ -29,29 +51,16 @@ def extract_dataset(dataset_csv: pd.DataFrame, hdf5_file_dir: Path,
         dataset_name: name of the aiming dataset.
     """
     logger.info(f"extracting {dataset_name} set.")
+    tasks = []
     num_data = 0
     for idx, row in enumerate(dataset_csv.itertuples()):
         # if number of data (in chain level) exceeds the defined threshold, data set extraction complete.
-        if num_data >= threshold:
-            break
-        pdb_id = row.id
-        # always extract pdb1 because the largest file is pdb1.
-        hdf5_file_whole_set = hdf5_file_dir / f"{pdb_id}_pdb1.hdf5"
-        hdf5_file_smaller_set = smaller_hdf5_file_dir / hdf5_file_whole_set.name
-
-        # if the pdb file exists, copy the pdb file to smaller dataset.
-        if hdf5_file_whole_set.exists():
-            if not hdf5_file_smaller_set.exists():
-                os.system(f"rsync -avz {hdf5_file_whole_set} {hdf5_file_smaller_set}")
-
-            pdb_full_id = row.full_id
-            chain = pdb_full_id.split("_")[-1]
-            f = h5py.File(hdf5_file_whole_set)
-
-            # only in the required chain in the pdb file will count as the data point.
-            if chain in f.keys():
-                num_data += 1
-            f.close()
+        tasks.append(copy_data_instance.remote(hdf5_file_dir, smaller_hdf5_file_dir, row.full_id, row.id))
+        if idx % 1000 == 999:
+            num_data_in_tasks = ray.get(tasks)
+            num_data += np.sum(num_data_in_tasks)
+            if num_data >= threshold:
+                break
 
 
 @hydra.main(version_base=None, config_path="../config", config_name="config")
@@ -105,5 +114,3 @@ def data_gen_smaller(args: DictConfig):
 
 if __name__ == "__main__":
     data_gen_smaller()
-
-
