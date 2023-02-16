@@ -60,7 +60,7 @@ def data_gen_smaller(args: DictConfig):
     # configuration assignment
     args_data = args.data
     args_voxel_box = args.voxel_box
-    baseline_dir = Path.cwd().parent  # baseline/
+    baseline_dir = Path.cwd()  # baseline/
     root_dir = baseline_dir.parent if not args_data.use_hddtore else "/hddstore/cliu3"
 
     # dataset split csv path
