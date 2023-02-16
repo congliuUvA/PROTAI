@@ -534,7 +534,7 @@ def gen_voxel_box_file(arguments, idx):
         assert num_datasets < num_residues
         num_datasets_skip = 0 if num_datasets == 0 else num_datasets - 1
         # delete the last generated dataset and regenerate the rest of datasets.
-        if num_datasets_skip != 0:
+        if num_datasets != 0:
             dataset_name = np.array(dataset_name, dtype=np.int)
             delete_dataset = dataset_name[np.argmax(dataset_name)]
             for chain in f.keys():
