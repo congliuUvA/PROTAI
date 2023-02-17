@@ -258,6 +258,7 @@ def generate_voxel_atom_lists(struct: Bio.PDB.Structure.Structure) -> Tuple[List
         struct: structure in biopython.
     """
     ca_list, cb_list, ca_cb_vectors = gen_ca_cb_vectors(struct)
+    print(f"len of ca, cb {len(ca_list)}, {len(cb_list)}")
     voxel_atom_lists, rot_mats, central_atom_coords = select_in_range_atoms(
         struct, ca_list, cb_list, ca_cb_vectors, selected_central_atom_type="CB", shift=0
     )
