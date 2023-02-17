@@ -522,6 +522,7 @@ def gen_voxel_box_file(arguments, idx):
 
     else:
         f = h5py.File(str(Path(arguments.hdf5_file_dir) / pdb_id) + ".hdf5", "w")
+        print(num_datasets, num_residues)
         # generate atom lists for 20*20*20 voxels, num_of_residue in pdb file in total.
         (
             voxel_atom_lists, rot_mats, central_atom_coords
