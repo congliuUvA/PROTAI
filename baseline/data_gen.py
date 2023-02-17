@@ -85,7 +85,7 @@ def data_gen(args: DictConfig):
 
         idx += 1
 
-    # ray.get(tasks)
+    ray.get(tasks)
 
 
 if __name__ == "__main__":
