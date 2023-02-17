@@ -508,7 +508,7 @@ def gen_voxel_box_file(arguments, idx):
     num_residues = count_res(struct)
 
     # start a hdf5 file
-    f = h5py.File(str(Path(arguments.hdf5_file_dir) / pdb_id) + ".hdf5", "r")
+    f = h5py.File(str(Path(arguments.hdf5_file_dir) / pdb_id) + ".hdf5", "a")
 
     print(f"Dealing with file index: {idx}, {str(Path(arguments.hdf5_file_dir) / pdb_id) + '.hdf5'}")
 
