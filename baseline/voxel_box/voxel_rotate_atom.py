@@ -530,4 +530,10 @@ def gen_voxel_box_file(arguments, idx):
 
         gen_voxel_binary_array(arguments, f, struct, pdb_name,
                                voxel_atom_lists, rot_mats, central_atom_coords)
+        num_datasets = 0
+        for chain in f.keys():
+            for box in f[chain]:
+                num_datasets += 1
+        print(num_datasets, num_residues)
+
         f.close()
