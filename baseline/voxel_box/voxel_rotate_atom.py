@@ -137,33 +137,30 @@ def gen_ca_cb_vectors(struct: Bio.PDB.Structure.Structure) -> Tuple[List, List, 
             if atom.get_name() == "CA": ca_atom = atom
             if atom.get_name() == "C": c_atom = atom
             if atom.get_name() == "N": n_atom = atom
-            if ca_atom is not None and c_atom is not None and n_atom is not None:
-                if res.get_resname() != "GLY":
-                    # residue other than GLY must have CB
-                    if atom.get_name() == "CB":
-                        # calculate projected CB coordinates
-                        cb_atom_coord = cal_projected_cb_coords(c_atom, n_atom, ca_atom)
-                        real_cb_atom = atom
-                        projected_cb_atom = Atom(name="CB_fake", coord=cb_atom_coord, bfactor=real_cb_atom.bfactor,
-                                                 occupancy=real_cb_atom.occupancy, altloc=real_cb_atom.altloc,
-                                                 fullname=real_cb_atom.fullname,
-                                                 serial_number=real_cb_atom.serial_number, element="C", )
-                        projected_cb_atom.set_parent(res)
-                        continue
-                else:
-                    # calculate projected CB coordinates
-                    cb_atom_coord = cal_projected_cb_coords(c_atom, n_atom, ca_atom)
-                    # create cb atom
-                    projected_cb_atom = Atom(name="CB_fake", coord=cb_atom_coord, bfactor=0, occupancy=0,
-                                             altloc="", fullname="", serial_number="", element="C", )
-                    projected_cb_atom.set_parent(res)
-                    continue
+            if atom.get_name() == "CB": real_cb_atom = atom
 
-        necessary_content = [ca_atom, projected_cb_atom, c_atom, n_atom, cb_atom_coord]
-        if all(i is not None for i in necessary_content):
-            ca_list.append(ca_atom)
-            cb_list.append(projected_cb_atom)
-            ca_cb_vectors.append(Vector(ca_atom.coord - cb_atom_coord))
+        if ca_atom is not None and c_atom is not None and n_atom is not None:
+            if real_cb_atom is not None:
+                # calculate projected CB coordinates
+                cb_atom_coord = cal_projected_cb_coords(c_atom, n_atom, ca_atom)
+                projected_cb_atom = Atom(name="CB_fake", coord=cb_atom_coord, bfactor=real_cb_atom.bfactor,
+                                         occupancy=real_cb_atom.occupancy, altloc=real_cb_atom.altloc,
+                                         fullname=real_cb_atom.fullname,
+                                         serial_number=real_cb_atom.serial_number, element="C", )
+                projected_cb_atom.set_parent(res)
+            else:
+                # calculate projected CB coordinates
+                cb_atom_coord = cal_projected_cb_coords(c_atom, n_atom, ca_atom)
+                # create cb atom
+                projected_cb_atom = Atom(name="CB_fake", coord=cb_atom_coord, bfactor=0, occupancy=0,
+                                         altloc="", fullname="", serial_number="", element="C", )
+                projected_cb_atom.set_parent(res)
+        else:
+            raise NameError(f"Residue {res.get_resname()} has no CA or C or N!")
+
+        ca_list.append(ca_atom)
+        cb_list.append(projected_cb_atom)
+        ca_cb_vectors.append(Vector(ca_atom.coord - cb_atom_coord))
 
     return ca_list, cb_list, ca_cb_vectors
 
