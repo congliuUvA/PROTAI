@@ -158,7 +158,6 @@ def gen_ca_cb_vectors(struct: Bio.PDB.Structure.Structure) -> Tuple[List, List, 
                 ca_list.append(ca_atom)
                 cb_list.append(projected_cb_atom)
                 ca_cb_vectors.append(Vector(ca_atom.coord - cb_atom_coord))
-
     return ca_list, cb_list, ca_cb_vectors
 
 
@@ -252,7 +251,6 @@ def generate_voxel_atom_lists(struct: Bio.PDB.Structure.Structure) -> Tuple[List
         struct: structure in biopython.
     """
     ca_list, cb_list, ca_cb_vectors = gen_ca_cb_vectors(struct)
-    print(f"len of ca, cb {len(ca_list)}, {len(cb_list)}")
     voxel_atom_lists, rot_mats, central_atom_coords = select_in_range_atoms(
         struct, ca_list, cb_list, ca_cb_vectors, selected_central_atom_type="CB", shift=0
     )
@@ -489,7 +487,7 @@ def count_res(struct: Bio.PDB.Structure.Structure) -> int:
     return num
 
 
-# @ray.remote
+@ray.remote
 def gen_voxel_box_file(arguments, idx):
     """The main function of generating voxels.
 
@@ -522,7 +520,6 @@ def gen_voxel_box_file(arguments, idx):
 
     else:
         f = h5py.File(str(Path(arguments.hdf5_file_dir) / pdb_id) + ".hdf5", "w")
-        print(num_datasets, num_residues)
         # generate atom lists for 20*20*20 voxels, num_of_residue in pdb file in total.
         (
             voxel_atom_lists, rot_mats, central_atom_coords
@@ -530,10 +527,4 @@ def gen_voxel_box_file(arguments, idx):
 
         gen_voxel_binary_array(arguments, f, struct, pdb_name,
                                voxel_atom_lists, rot_mats, central_atom_coords)
-        num_datasets = 0
-        for chain in f.keys():
-            for box in f[chain]:
-                num_datasets += 1
-        print(num_datasets, num_residues)
-
         f.close()
