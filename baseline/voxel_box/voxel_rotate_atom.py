@@ -139,7 +139,7 @@ def gen_ca_cb_vectors(struct: Bio.PDB.Structure.Structure) -> Tuple[List, List, 
             if atom.get_name() == "N": n_atom = atom
             if atom.get_name() == "CB": real_cb_atom = atom
 
-        if ca_atom is not None and c_atom is not None and n_atom is not None:
+        if (ca_atom is not None) and (c_atom is not None) and (n_atom is not None):
             if real_cb_atom is not None:
                 # calculate projected CB coordinates
                 cb_atom_coord = cal_projected_cb_coords(c_atom, n_atom, ca_atom)
@@ -481,8 +481,8 @@ def count_res(struct: Bio.PDB.Structure.Structure) -> int:
     """Count number of residues in the given structure."""
     num = 0
     for res in struct.get_residues():
-        if res.get_resname() not in RES_NAME:
-            continue
+        # if res.get_resname() not in RES_NAME:
+        #     continue
         num += 1
     return num
 
