@@ -156,6 +156,12 @@ def gen_ca_cb_vectors(struct: Bio.PDB.Structure.Structure) -> Tuple[List, List, 
                                          altloc="", fullname="", serial_number="", element="C", )
                 projected_cb_atom.set_parent(res)
         else:
+            if ca_atom is None:
+                print("CA")
+            if c_atom is None:
+                print("C")
+            if n_atom is None:
+                print("N")
             raise NameError(f"Residue {res.get_resname()} has no CA or C or N!")
 
         ca_list.append(ca_atom)
