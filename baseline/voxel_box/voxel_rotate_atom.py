@@ -481,9 +481,8 @@ def count_res(struct: Bio.PDB.Structure.Structure) -> int:
     """Count number of residues in the given structure."""
     num = 0
     for res in struct.get_residues():
-        # if res.get_resname() not in RES_NAME:
-        #     continue
-        num += 1
+        if res.get_resname() in RES_NAME:
+            num += 1
     return num
 
 
