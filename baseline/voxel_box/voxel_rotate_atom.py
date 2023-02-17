@@ -519,12 +519,14 @@ def gen_voxel_box_file(arguments, idx):
         return
 
     else:
-        f = h5py.File(str(Path(arguments.hdf5_file_dir) / pdb_id) + ".hdf5", "w")
-        # generate atom lists for 20*20*20 voxels, num_of_residue in pdb file in total.
-        (
-            voxel_atom_lists, rot_mats, central_atom_coords
-        ) = generate_voxel_atom_lists(struct) # (num_ca, num_atoms_in_voxel)
-
-        gen_voxel_binary_array(arguments, f, struct, pdb_name,
-                               voxel_atom_lists, rot_mats, central_atom_coords)
-        f.close()
+        # f = h5py.File(str(Path(arguments.hdf5_file_dir) / pdb_id) + ".hdf5", "w")
+        # # generate atom lists for 20*20*20 voxels, num_of_residue in pdb file in total.
+        # (
+        #     voxel_atom_lists, rot_mats, central_atom_coords
+        # ) = generate_voxel_atom_lists(struct) # (num_ca, num_atoms_in_voxel)
+        #
+        # gen_voxel_binary_array(arguments, f, struct, pdb_name,
+        #                        voxel_atom_lists, rot_mats, central_atom_coords)
+        # f.close()
+        print(f"not the same!")
+        return

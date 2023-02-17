@@ -57,9 +57,9 @@ def data_gen(args: DictConfig):
         #     break
 
         # 2/2
-        if idx <= int(total / 2):
-            idx += 1
-            continue
+        # if idx <= int(total / 2):
+        #     idx += 1
+        #     continue
 
         # unzipped pdb file name
         pdb_pure_id = pdb.name.split(".")[0]
