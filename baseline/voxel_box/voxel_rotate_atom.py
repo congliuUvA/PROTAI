@@ -154,18 +154,10 @@ def gen_ca_cb_vectors(struct: Bio.PDB.Structure.Structure) -> Tuple[List, List, 
                     projected_cb_atom = Atom(name="CB_fake", coord=cb_atom_coord, bfactor=0, occupancy=0,
                                              altloc="", fullname="", serial_number="", element="C", )
                     projected_cb_atom.set_parent(res)
-            else:
-                if ca_atom is None:
-                    print("CA")
-                if c_atom is None:
-                    print("C")
-                if n_atom is None:
-                    print("N")
-                raise NameError(f"Residue {res.get_resname()} has no CA or C or N!")
 
-            ca_list.append(ca_atom)
-            cb_list.append(projected_cb_atom)
-            ca_cb_vectors.append(Vector(ca_atom.coord - cb_atom_coord))
+                ca_list.append(ca_atom)
+                cb_list.append(projected_cb_atom)
+                ca_cb_vectors.append(Vector(ca_atom.coord - cb_atom_coord))
 
     return ca_list, cb_list, ca_cb_vectors
 
@@ -487,7 +479,13 @@ def count_res(struct: Bio.PDB.Structure.Structure) -> int:
     num = 0
     for res in struct.get_residues():
         if res.get_resname() in RES_NAME:
-            num += 1
+            ca_atom, c_atom, n_atom = [None] * 3
+            for atom in res.get_atoms():
+                if atom.get_name() == "C": c_atom = atom
+                if atom.get_name() == "N": n_atom = atom
+                if atom.get_name() == "CA": ca_atom = atom
+            if (ca_atom is not None) and (c_atom is not None) and (n_atom is not None):
+                num += 1
     return num
 
 
