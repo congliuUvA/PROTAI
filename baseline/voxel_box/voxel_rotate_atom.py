@@ -487,7 +487,7 @@ def count_res(struct: Bio.PDB.Structure.Structure) -> int:
     return num
 
 
-@ray.remote
+# @ray.remote
 def gen_voxel_box_file(arguments, idx):
     """The main function of generating voxels.
 

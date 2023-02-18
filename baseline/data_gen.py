@@ -61,6 +61,10 @@ def data_gen(args: DictConfig):
         #     idx += 1
         #     continue
 
+        if idx <= 249700:
+            idx += 1
+            continue
+
         # unzipped pdb file name
         pdb_pure_id = pdb.name.split(".")[0]
         assembly_id = pdb.name.split(".")[1]
@@ -79,13 +83,14 @@ def data_gen(args: DictConfig):
         args_voxel_box.pdb_path = pdb_unzip
         args_voxel_box.pdb_id = pdb_id
 
-        task = gen_voxel_box_file.remote(args_voxel_box, idx)
+        # task = gen_voxel_box_file.remote(args_voxel_box, idx)
+        gen_voxel_box_file(args_voxel_box, idx)
 
-        tasks.append(task)
+        # tasks.append(task)
 
         idx += 1
 
-    ray.get(tasks)
+    # ray.get(tasks)
 
 
 if __name__ == "__main__":
