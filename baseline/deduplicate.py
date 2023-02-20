@@ -14,7 +14,6 @@ from utils import log
 logger = log.get_logger(__name__)
 
 
-@ray.remote
 def deduplicate(hdf5_file_path, pdb_id):
     # select the largest biological assembly file
     biological_assemblies_path = []
@@ -69,12 +68,9 @@ def main(args: DictConfig):
     # iterate through all the pdb1 hdf5 files
     for hdf5_file in hdf5_file_path.rglob("*.hdf5"):
         pdb_id = hdf5_file.name.split("_")[0]
-        tasks.append(deduplicate.remote(hdf5_file_path, pdb_id))
-    ray.get(tasks)
+        deduplicate(hdf5_file_path, pdb_id)
 
 
 if __name__ == "__main__":
     logger.info("Deduplication started!")
-    if not ray.is_initialized():
-        ray.init(address='10.150.1.8:6379')
     main()
