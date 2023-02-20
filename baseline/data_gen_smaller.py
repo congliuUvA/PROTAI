@@ -24,31 +24,29 @@ def copy_data_instance(hdf5_file_dir, smaller_hdf5_file_dir, pdb_full_id, pdb_id
     hdf5_file_whole_set = hdf5_file_dir / f"{pdb_id}_pdb1.hdf5"
     hdf5_file_smaller_set = smaller_hdf5_file_dir / hdf5_file_whole_set.name
 
-    # if the pdb file exists, copy the pdb file to smaller dataset.
+    # if the pdb file exists, then consider if the chain is contained in the pdb
     if hdf5_file_whole_set.exists():
-        if not hdf5_file_smaller_set.exists():
-            os.system(f"rsync -avz {hdf5_file_whole_set} {hdf5_file_smaller_set}")
-
         chain = pdb_full_id.split("_")[-1]
         f = h5py.File(hdf5_file_whole_set, "r")
-
         # only in the required chain in the pdb file will count as the data point.
         if chain in f.keys():
+            # if the pdb file is not copied previously
+            if not hdf5_file_smaller_set.exists():
+                os.system(f"rsync -avz {hdf5_file_whole_set} {hdf5_file_smaller_set}")
             num_copied_data += 1
         f.close()
+
     return num_copied_data
 
 
 def extract_dataset(dataset_csv: pd.DataFrame, hdf5_file_dir: Path,
-                    smaller_hdf5_file_dir: Path, threshold: int,
-                    dataset_name: str):
+                    smaller_hdf5_file_dir: Path, dataset_name: str):
     """This function is used to extract (copy) hdf5 file from voxel_hdf5 to smaller_voxel_hdf5
 
     Args:
         dataset_csv: csv used as a reference to copy data.
         hdf5_file_dir: directory of voxel hdf5.
         smaller_hdf5_file_dir: directory of smaller voxel hdf5.
-        threshold: threshold of number of data (in chain level).
         dataset_name: name of the aiming dataset.
     """
     logger.info(f"extracting {dataset_name} set.")
@@ -57,12 +55,7 @@ def extract_dataset(dataset_csv: pd.DataFrame, hdf5_file_dir: Path,
     for idx, row in enumerate(dataset_csv.itertuples()):
         # if number of data (in chain level) exceeds the defined threshold, data set extraction complete.
         tasks.append(copy_data_instance.remote(hdf5_file_dir, smaller_hdf5_file_dir, row.full_id, row.id))
-        if idx % 1000 == 999:
-            num_data_in_tasks = ray.get(tasks)
-            num_data += np.sum(num_data_in_tasks)
-            tasks = []
-            if num_data >= threshold:
-                break
+    ray.get(tasks)
 
 
 @hydra.main(version_base=None, config_path="../config", config_name="config")
@@ -70,7 +63,6 @@ def data_gen_smaller(args: DictConfig):
     """This function generates hdf5 file for all pdb files"""
     # configuration assignment
     args_data = args.data
-    args_voxel_box = args.voxel_box
     baseline_dir = Path.cwd()  # baseline/
     root_dir = baseline_dir.parent if not args_data.use_hddtore else "/hddstore/cliu3"
 
@@ -88,34 +80,32 @@ def data_gen_smaller(args: DictConfig):
     smaller_hdf5_file_dir.mkdir() if not smaller_hdf5_file_dir.exists() else None
 
     train_csv = dataset_csv.loc[dataset_csv["set"] == "training"]
-    test_csv = dataset_csv.loc[dataset_csv["set"] == "test"]
+    train_csv = train_csv.loc[train_csv["fold"] in ["fold_0", "fold_1", "fold_2"]]
+    train_csv = train_csv.iloc[np.random.permutation(len(train_csv))]
+    train_csv = train_csv.iloc[:100000]
+
     val_csv = dataset_csv.loc[dataset_csv["set"] == "validation"]
-
-    num_train_th, num_test_th, num_val_th = 80000, test_csv.size, 10000
-
-    logger.info(f"Aimed training, test, val set data points: {num_train_th}, {num_test_th}, {num_val_th}")
 
     extract_dataset(dataset_csv=train_csv,
                     hdf5_file_dir=hdf5_file_dir,
                     smaller_hdf5_file_dir=smaller_hdf5_file_dir,
-                    threshold=num_train_th,
                     dataset_name="train")
-
-    extract_dataset(dataset_csv=test_csv,
-                    hdf5_file_dir=hdf5_file_dir,
-                    smaller_hdf5_file_dir=smaller_hdf5_file_dir,
-                    threshold=num_test_th,
-                    dataset_name="test")
 
     extract_dataset(dataset_csv=val_csv,
                     hdf5_file_dir=hdf5_file_dir,
                     smaller_hdf5_file_dir=smaller_hdf5_file_dir,
-                    threshold=num_val_th,
                     dataset_name="validation")
+
+    # test_csv = dataset_csv.loc[dataset_csv["set"] == "test"]
+    # extract_dataset(dataset_csv=test_csv,
+    #                 hdf5_file_dir=hdf5_file_dir,
+    #                 smaller_hdf5_file_dir=smaller_hdf5_file_dir,
+    #                 dataset_name="test")
 
 
 if __name__ == "__main__":
     logger.info("Data gen started!")
     if not ray.is_initialized():
-        ray.init(address='10.150.1.7:6379')
+        ray.init(address='10.150.1.8:6379')
+    np.seed(0)
     data_gen_smaller()
