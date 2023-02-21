@@ -74,7 +74,6 @@ def data_gen_smaller(args: DictConfig):
     baseline_dir = Path.cwd()  # baseline/
     root_dir = baseline_dir.parent if not args_data.use_hddtore else "/hddstore/cliu3"
 
-
     # dataset split csv path
     dataset_split_csv = root_dir / Path(args_data.dataset_split_csv)
 
@@ -94,6 +93,8 @@ def data_gen_smaller(args: DictConfig):
                               (train_csv["fold"] == "fold_2")]
     train_csv = train_csv.iloc[np.random.permutation(len(train_csv))]
     train_csv = train_csv.iloc[:100000]
+
+    print(train_csv.shape)
 
     val_csv = dataset_csv.loc[dataset_csv["set"] == "validation"]
 
