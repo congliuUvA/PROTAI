@@ -8,6 +8,7 @@ import numpy as np
 import torch
 from torch import Tensor
 import torchvision.transforms as T
+from tqdm import tqdm
 
 
 class VoxelsDataset(Dataset):
@@ -20,7 +21,7 @@ class VoxelsDataset(Dataset):
             training: bool = False,
             test: bool = False,
             val: bool = False,
-            fold: Union[int, None] = None,
+            fold: Union[str, None] = None,
             k_fold_test: bool = False,
             transform=None,
     ):
@@ -36,13 +37,14 @@ class VoxelsDataset(Dataset):
             k_fold_test: set to True if the dataset is used as k-fold test set.
             transform: transformation applied to the data set.
         """
+        self.len_accumulate_list = None
         self.hdf5_files_path = hdf5_files_path
         self.dataset_split_csv_path = dataset_split_csv_path
         self.training = training
         self.test = test
         self.val = val
         self.dataset_csv = pd.read_csv(self.dataset_split_csv_path)
-        self.set_name = "training" if self.training else "test" if self.test else "eval"
+        self.set_name = "training" if self.training else "test" if self.test else "validation"
         self.dataset_csv = self.dataset_csv.loc[self.dataset_csv["set"] == self.set_name]
         if self.training:
             assert fold is not None
@@ -58,7 +60,10 @@ class VoxelsDataset(Dataset):
         ]
         self.residue_name_dic = {name: idx for idx, name in enumerate(self.residue_name)}
         self.transform = transform
-        self.updated_csv = None
+        self.len_accumulate_list = []
+        self.length = 0
+        self.updated_csv = self.dataset_csv.copy()
+        self.gen_updated_csv()
 
     def __len__(self) -> int:
         """Return the length of the dataset.
@@ -66,26 +71,7 @@ class VoxelsDataset(Dataset):
         Returns:
             length of directory.
         """
-        # length accumulate list, prepared for indexing specific box in the data set.
-        self.len_accumulate_list = []
-        length = 0
-        delete_row_idx = []
-        # iterate through all files in sub set
-        for idx, row in self.dataset_csv.itertuples():
-            pdb_full_id = row["full_id"]
-            chain = pdb_full_id.split("_")[-1]
-            pdb_id = row["id"]
-            hdf5_file = self.hdf5_files_path / f"{pdb_id}_pdb1.hdf5"
-            if not hdf5_file.exists():
-                delete_row_idx.append(idx)
-                continue
-            f = h5py.File(hdf5_file, "r")
-            # each box count as one data sample
-            length += len(f[chain].keys())
-            self.len_accumulate_list.append(length)
-        if not self.updated_csv:
-            self.updated_csv = self.dataset_csv.drop(index=delete_row_idx)
-        return length
+        return self.length
 
     def __getitem__(self, idx: int) -> Tuple[Tensor, Tensor]:
         """Load the data corresponding to the given index.
@@ -117,6 +103,27 @@ class VoxelsDataset(Dataset):
             voxel = self.transform(voxel)
 
         return voxel, label
+
+    def gen_updated_csv(self):
+        # length accumulate list, prepared for indexing specific box in the data set.
+        delete_row_idx = []
+        # iterate through all files in sub set
+        for idx, row in enumerate(tqdm(self.dataset_csv.itertuples(), total=len(self.dataset_csv.index))):
+            pdb_full_id = row.full_id
+            chain = pdb_full_id.split("_")[-1]
+            pdb_id = row.id
+            hdf5_file = self.hdf5_files_path / f"{pdb_id}_pdb1.hdf5"
+            if not hdf5_file.exists():
+                delete_row_idx.append(idx)
+                continue
+            f = h5py.File(hdf5_file, "r")
+            if chain not in list(f.keys()) or len(f[chain]) == 0:
+                delete_row_idx.append(idx)
+                continue
+            # each box count as one data sample
+            self.length += len(f[chain]["num_boxes_chain"])
+            self.len_accumulate_list.append(self.length)
+            self.updated_csv.drop(index=[delete_row_idx])
 
 
 class GaussianFilter(object):
