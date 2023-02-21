@@ -16,7 +16,7 @@ import ray
 logger = log.get_logger(__name__)
 
 
-# @ray.remote
+@ray.remote
 def copy_data_instance(hdf5_file_dir, smaller_hdf5_file_dir, pdb_full_id, pdb_id):
     # always retrieve the largest file
     hdf5_file_whole_set = hdf5_file_dir / f"{pdb_id}_pdb1.hdf5"
@@ -55,10 +55,10 @@ def extract_dataset(dataset_csv: pd.DataFrame, hdf5_file_dir: Path,
     tasks = []
     for idx, row in enumerate(dataset_csv.itertuples()):
         # if number of data (in chain level) exceeds the defined threshold, data set extraction complete.
-        # tasks.append(copy_data_instance.remote(hdf5_file_dir, smaller_hdf5_file_dir, row.full_id, row.id))
-        copy_data_instance(hdf5_file_dir, smaller_hdf5_file_dir, row.full_id, row.id)
+        tasks.append(copy_data_instance.remote(hdf5_file_dir, smaller_hdf5_file_dir, row.full_id, row.id))
+        # copy_data_instance(hdf5_file_dir, smaller_hdf5_file_dir, row.full_id, row.id)
 
-    # ray.get(tasks)
+    ray.get(tasks)
 
 
 @hydra.main(version_base=None, config_path="../config", config_name="config")
@@ -91,10 +91,10 @@ def data_gen_smaller(args: DictConfig):
 
     val_csv = dataset_csv.loc[dataset_csv["set"] == "validation"]
 
-    extract_dataset(dataset_csv=train_csv,
-                    hdf5_file_dir=hdf5_file_dir,
-                    smaller_hdf5_file_dir=smaller_hdf5_file_dir,
-                    dataset_name="train")
+    # extract_dataset(dataset_csv=train_csv,
+    #                 hdf5_file_dir=hdf5_file_dir,
+    #                 smaller_hdf5_file_dir=smaller_hdf5_file_dir,
+    #                 dataset_name="train")
 
     extract_dataset(dataset_csv=val_csv,
                     hdf5_file_dir=hdf5_file_dir,
