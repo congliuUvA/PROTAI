@@ -26,22 +26,23 @@ def copy_data_instance(hdf5_file_dir, smaller_hdf5_file_dir, pdb_full_id, pdb_id
     for pdb_hdf5 in hdf5_file_dir.rglob(f"*{pdb_id}*"):
         biological_assemblies_path.append(pdb_hdf5)
         biological_assemblies_size.append(os.path.getsize(pdb_hdf5))
-    selected_pdb_hdf5_file = biological_assemblies_path[np.argmax(biological_assemblies_size)]
 
-    hdf5_file_whole_set = selected_pdb_hdf5_file
+    # if there is no pdb existed in the dataset, break
+    if len(biological_assemblies_size) == 0:
+        return 0
+
+    hdf5_file_whole_set = biological_assemblies_path[np.argmax(biological_assemblies_size)]
     hdf5_file_smaller_set = smaller_hdf5_file_dir / hdf5_file_whole_set.name
 
-    # if the pdb file exists, then consider if the chain is contained in the pdb
-    if hdf5_file_whole_set.exists():
-        chain = pdb_full_id.split("_")[-1]
-        f = h5py.File(hdf5_file_whole_set, "r")
-        # only in the required chain in the pdb file will count as the data point.
-        if chain in f.keys():
-            # if the pdb file is not copied previously
-            if not hdf5_file_smaller_set.exists():
-                os.system(f"rsync -avz {hdf5_file_whole_set} {hdf5_file_smaller_set}")
-            num_copied_data += 1
-        f.close()
+    chain = pdb_full_id.split("_")[-1]
+    f = h5py.File(hdf5_file_whole_set, "r")
+    # only in the required chain in the pdb file will count as the data point.
+    if chain in f.keys():
+        # if the pdb file is not copied previously
+        if not hdf5_file_smaller_set.exists():
+            os.system(f"rsync -avz {hdf5_file_whole_set} {hdf5_file_smaller_set}")
+        num_copied_data += 1
+    f.close()
 
     return num_copied_data
 
@@ -116,5 +117,5 @@ if __name__ == "__main__":
     logger.info("Data gen started!")
     if not ray.is_initialized():
         ray.init(address='10.150.1.8:6379')
-    np.seed(0)
+    np.random.seed(0)
     data_gen_smaller()
