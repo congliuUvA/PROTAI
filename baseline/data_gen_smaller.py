@@ -31,7 +31,7 @@ def copy_data_instance(hdf5_file_dir, smaller_hdf5_file_dir, pdb_full_id, pdb_id
     if chain in f.keys():
         # if the pdb file is not copied previously
         if not hdf5_file_smaller_set.exists():
-            os.system(f"cp {hdf5_file_whole_set} {hdf5_file_smaller_set}")
+            os.system(f"rsync {hdf5_file_whole_set} {hdf5_file_smaller_set}")
     f.close()
 
     return
