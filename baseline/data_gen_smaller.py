@@ -89,7 +89,9 @@ def data_gen_smaller(args: DictConfig):
     smaller_hdf5_file_dir.mkdir() if not smaller_hdf5_file_dir.exists() else None
 
     train_csv = dataset_csv.loc[dataset_csv["set"] == "training"]
-    train_csv = train_csv.loc[train_csv["fold"] in ["fold_0", "fold_1", "fold_2"]]
+    train_csv = train_csv.loc[(train_csv["fold"] == "fold_0") &
+                              (train_csv["fold"] == "fold_1") &
+                              (train_csv["fold"] == "fold_2")]
     train_csv = train_csv.iloc[np.random.permutation(len(train_csv))]
     train_csv = train_csv.iloc[:100000]
 
