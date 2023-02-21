@@ -93,7 +93,7 @@ def gridbox(box_coords, index, r1=0, g1=0, b1=1, trasp=0.2):
 def view_boxes():
     """Note that please use pymol to go to the current directory (box_visualization) for visualization."""
     path = Path.cwd()
-    path_of_np_coords = path.parent.joinpath("box_coords").joinpath("3gbn.npy")
+    path_of_np_coords = path.parent.parent.joinpath("box_coords").joinpath("3c70.npy")
     box_coords = np.load(str(path_of_np_coords))
     for i, coord in enumerate(box_coords):
         gridbox(coord, i)
