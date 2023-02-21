@@ -24,7 +24,7 @@ def copy_data_instance(hdf5_file_dir, smaller_hdf5_file_dir, pdb_full_id, pdb_id
 
     if not hdf5_file_whole_set.exists():
         return
-
+    print(hdf5_file_whole_set)
     chain = pdb_full_id.split("_")[-1]
     try:
         f = h5py.File(hdf5_file_whole_set, "r")
