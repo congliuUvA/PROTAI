@@ -82,7 +82,6 @@ def select_in_range_atoms(
     central_atom_list = ca_list if selected_central_atom_type == "CA" else cb_list
 
     # get ca_cb vector and corner vector
-    ca_cb_vectors = [Vector(ca.get_coord()) - Vector(cb.get_coord()) for ca, cb in zip(ca_list, cb_list)]
     corner_vector = Vector(1, 1, 1)
 
     voxel_atom_lists = []
@@ -278,8 +277,8 @@ def add_atom_to_voxel(
 def main(arguments):
     """The main function of generating voxels."""
     # 0. Load protein structure
-    pdb_name = "3gbn"
-    pdb_path = "3gbn.pdb"
+    pdb_name = "3c70"
+    pdb_path = "3c70.pdb1"
     struct = load_protein(arguments, pdb_name, pdb_path)
 
     # 1. generate atom lists for 20*20*20 voxels
@@ -321,6 +320,7 @@ def main(arguments):
     if not box_coords_dir_path.exists():
         box_coords_dir_path.mkdir()
     structure_box_coords_path = box_coords_dir_path.joinpath(Path(pdb_name).stem + ".npy")
+    print(f"save coord at {str(structure_box_coords_path)}")
     np.save(str(structure_box_coords_path), vertices_coords)
 
 
