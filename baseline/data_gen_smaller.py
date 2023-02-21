@@ -91,10 +91,10 @@ def data_gen_smaller(args: DictConfig):
 
     val_csv = dataset_csv.loc[dataset_csv["set"] == "validation"]
 
-    # extract_dataset(dataset_csv=train_csv,
-    #                 hdf5_file_dir=hdf5_file_dir,
-    #                 smaller_hdf5_file_dir=smaller_hdf5_file_dir,
-    #                 dataset_name="train")
+    extract_dataset(dataset_csv=train_csv,
+                    hdf5_file_dir=hdf5_file_dir,
+                    smaller_hdf5_file_dir=smaller_hdf5_file_dir,
+                    dataset_name="train")
 
     extract_dataset(dataset_csv=val_csv,
                     hdf5_file_dir=hdf5_file_dir,
