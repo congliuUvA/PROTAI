@@ -9,7 +9,6 @@ import pandas as pd
 from omegaconf import DictConfig
 from pathlib import Path
 import numpy as np
-from tqdm import tqdm
 from utils import log
 import h5py
 import ray
@@ -20,8 +19,16 @@ logger = log.get_logger(__name__)
 @ray.remote
 def copy_data_instance(hdf5_file_dir, smaller_hdf5_file_dir, pdb_full_id, pdb_id):
     num_copied_data = 0
-    # always extract pdb1 because the largest file is pdb1.
-    hdf5_file_whole_set = hdf5_file_dir / f"{pdb_id}_pdb1.hdf5"
+
+    # always extract largest hdf5 file.
+    biological_assemblies_path = []
+    biological_assemblies_size = []
+    for pdb_hdf5 in hdf5_file_dir.rglob(f"*{pdb_id}*"):
+        biological_assemblies_path.append(pdb_hdf5)
+        biological_assemblies_size.append(os.path.getsize(pdb_hdf5))
+    selected_pdb_hdf5_file = biological_assemblies_path[np.argmax(biological_assemblies_size)]
+
+    hdf5_file_whole_set = selected_pdb_hdf5_file
     hdf5_file_smaller_set = smaller_hdf5_file_dir / hdf5_file_whole_set.name
 
     # if the pdb file exists, then consider if the chain is contained in the pdb
@@ -65,6 +72,8 @@ def data_gen_smaller(args: DictConfig):
     args_data = args.data
     baseline_dir = Path.cwd()  # baseline/
     root_dir = baseline_dir.parent if not args_data.use_hddtore else "/hddstore/cliu3"
+
+    args_data.hdf5_file_dir = "voxels_hdf5_test"
 
     # dataset split csv path
     dataset_split_csv = root_dir / Path(args_data.dataset_split_csv)
