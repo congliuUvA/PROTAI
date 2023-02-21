@@ -107,11 +107,11 @@ def cal_projected_cb_coords(c_atom, n_atom, ca_atom) -> ndarray:
     Returns:
         cb_atom_coord: projected CB atom coordinates
     """
-    p_vector = c_atom.coord - n_atom.coord
+    p_vector = c_atom.coord - ca_atom.coord
     q_vector = n_atom.coord - ca_atom.coord
     u_vector = (p_vector + q_vector) / np.linalg.norm(p_vector + q_vector)
     r_vector = (p_vector - q_vector) / np.linalg.norm(p_vector - q_vector)
-    m = rotaxis2m(-np.pi * 125 / 360, Vector(r_vector))
+    m = rotaxis2m(-2 * np.pi * 125.26 / 360, Vector(r_vector))
     b_vector = Vector(u_vector).left_multiply(m) / np.linalg.norm(Vector(u_vector).left_multiply(m))
     cb_atom_coord = b_vector.get_array() * 1.5 + ca_atom.coord
     return cb_atom_coord
