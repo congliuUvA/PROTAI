@@ -74,7 +74,6 @@ def data_gen_smaller(args: DictConfig):
     baseline_dir = Path.cwd()  # baseline/
     root_dir = baseline_dir.parent if not args_data.use_hddtore else "/hddstore/cliu3"
 
-    args_data.hdf5_file_dir = "voxels_hdf5_test"
 
     # dataset split csv path
     dataset_split_csv = root_dir / Path(args_data.dataset_split_csv)
