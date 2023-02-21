@@ -18,21 +18,12 @@ logger = log.get_logger(__name__)
 
 @ray.remote
 def copy_data_instance(hdf5_file_dir, smaller_hdf5_file_dir, pdb_full_id, pdb_id):
-    num_copied_data = 0
-
-    # always extract largest hdf5 file.
-    biological_assemblies_path = []
-    biological_assemblies_size = []
-    for pdb_hdf5 in hdf5_file_dir.rglob(f"*{pdb_id}*"):
-        biological_assemblies_path.append(pdb_hdf5)
-        biological_assemblies_size.append(os.path.getsize(pdb_hdf5))
-
-    # if there is no pdb existed in the dataset, break
-    if len(biological_assemblies_size) == 0:
-        return 0
-
-    hdf5_file_whole_set = biological_assemblies_path[np.argmax(biological_assemblies_size)]
+    # always retrieve the largest file
+    hdf5_file_whole_set = hdf5_file_dir / f"{pdb_id}_pdb1.hdf5"
     hdf5_file_smaller_set = smaller_hdf5_file_dir / hdf5_file_whole_set.name
+
+    if not hdf5_file_whole_set.exists():
+        return
 
     chain = pdb_full_id.split("_")[-1]
     f = h5py.File(hdf5_file_whole_set, "r")
@@ -40,11 +31,10 @@ def copy_data_instance(hdf5_file_dir, smaller_hdf5_file_dir, pdb_full_id, pdb_id
     if chain in f.keys():
         # if the pdb file is not copied previously
         if not hdf5_file_smaller_set.exists():
-            os.system(f"rsync -avz {hdf5_file_whole_set} {hdf5_file_smaller_set}")
-        num_copied_data += 1
+            os.system(f"cp {hdf5_file_whole_set} {hdf5_file_smaller_set}")
     f.close()
 
-    return num_copied_data
+    return
 
 
 def extract_dataset(dataset_csv: pd.DataFrame, hdf5_file_dir: Path,
@@ -59,7 +49,6 @@ def extract_dataset(dataset_csv: pd.DataFrame, hdf5_file_dir: Path,
     """
     logger.info(f"extracting {dataset_name} set.")
     tasks = []
-    num_data = 0
     for idx, row in enumerate(dataset_csv.itertuples()):
         # if number of data (in chain level) exceeds the defined threshold, data set extraction complete.
         tasks.append(copy_data_instance.remote(hdf5_file_dir, smaller_hdf5_file_dir, row.full_id, row.id))
@@ -88,13 +77,11 @@ def data_gen_smaller(args: DictConfig):
     smaller_hdf5_file_dir.mkdir() if not smaller_hdf5_file_dir.exists() else None
 
     train_csv = dataset_csv.loc[dataset_csv["set"] == "training"]
-    train_csv = train_csv.loc[(train_csv["fold"] == "fold_0") &
-                              (train_csv["fold"] == "fold_1") &
+    train_csv = train_csv.loc[(train_csv["fold"] == "fold_0") |
+                              (train_csv["fold"] == "fold_1") |
                               (train_csv["fold"] == "fold_2")]
     train_csv = train_csv.iloc[np.random.permutation(len(train_csv))]
     train_csv = train_csv.iloc[:100000]
-
-    print(train_csv.shape)
 
     val_csv = dataset_csv.loc[dataset_csv["set"] == "validation"]
 
