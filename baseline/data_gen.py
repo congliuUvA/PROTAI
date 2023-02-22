@@ -27,6 +27,9 @@ def data_gen(args: DictConfig):
     # dataset split csv path
     dataset_split_csv = root_dir / Path(args_data.dataset_split_csv)
 
+    # load gz file list
+    gz_file_list = np.load(str(baseline_dir / "gz_file_list.npy"))
+
     # download raw data set if not existed in the WR.
     if not raw_pdb_dir.exists():
         raw_pdb_dir.mkdir()
@@ -44,26 +47,39 @@ def data_gen(args: DictConfig):
     dataset_split_pd = pd.read_csv(str(dataset_split_csv))
     pdb_id_array = np.unique(np.array(dataset_split_pd.id))
 
-    idx = 0
-    total = 289756
+    idx, total = 0, gz_file_list.shape[0]
 
     # ray tasks
     logger.info("Start ray tasks.")
     tasks = []
-    for pdb in raw_pdb_dir.rglob("*.gz"):
-        # # 1/2
-        # if idx > int(total / 2):
-        #     print("1/2 completed")
+    for pdb in gz_file_list:
+        # # 1/4
+        # if idx > int(total / 4):
+        #     logger.info("1/4 completed")
         #     break
 
-        # 2/2
-        # if idx <= int(total / 2):
+        # 1/4 - 2/4
+        # if idx <= int(total / 4):
         #     idx += 1
         #     continue
+        # if idx > 2*int(total / 4):
+        #     logger.info("2/4 completed")
+        #     break
 
-        if idx <= 249700:
-            idx += 1
-            continue
+        # 2/4 - 3/4
+        # if idx <= 2*int(total / 4):
+        #     idx += 1
+        #     continue
+        # if idx > 3*int(total / 4):
+        #     logger.info("3/4 completed")
+        #     break
+
+        # 3/4 - 4/4
+        # if idx <= 3*int(total / 4):
+        #     idx += 1
+        #     continue
+        # if idx == total - 1:
+        #     logger.info("4/4 completed")
 
         # unzipped pdb file name
         pdb_pure_id = pdb.name.split(".")[0]
@@ -83,14 +99,14 @@ def data_gen(args: DictConfig):
         args_voxel_box.pdb_path = pdb_unzip
         args_voxel_box.pdb_id = pdb_id
 
-        # task = gen_voxel_box_file.remote(args_voxel_box, idx)
-        gen_voxel_box_file(args_voxel_box, idx)
+        task = gen_voxel_box_file.remote(args_voxel_box, idx)
+        # gen_voxel_box_file(args_voxel_box, idx)
 
-        # tasks.append(task)
+        tasks.append(task)
 
         idx += 1
 
-    # ray.get(tasks)
+    ray.get(tasks)
 
 
 if __name__ == "__main__":
