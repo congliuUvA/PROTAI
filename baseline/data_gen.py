@@ -92,8 +92,9 @@ def data_gen(args: DictConfig):
 
         # unzip pdb file
         pdb_unzip = ".".join(str(pdb).split(".")[:-1])
+        logger.info(1)
         os.system(f"gunzip -c {pdb} > {pdb_unzip}")
-
+        logger.info(1)
         # assign pdb info to args_voxel_box
         args_voxel_box.pdb_name = pdb_pure_id
         args_voxel_box.pdb_path = pdb_unzip
