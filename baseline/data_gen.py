@@ -52,8 +52,7 @@ def data_gen(args: DictConfig):
     # ray tasks
     logger.info("Start ray tasks.")
     tasks = []
-    # for pdb in gz_file_list:
-    for pdb in raw_pdb_dir.rglob("*.gz"):
+    for pdb in gz_file_list:
         print(pdb)
         # 1/4
         if idx > int(total / 4):
@@ -102,14 +101,14 @@ def data_gen(args: DictConfig):
         args_voxel_box.pdb_path = pdb_unzip
         args_voxel_box.pdb_id = pdb_id
 
-        # task = gen_voxel_box_file.remote(args_voxel_box, idx)
-        gen_voxel_box_file(args_voxel_box, idx)
+        task = gen_voxel_box_file.remote(args_voxel_box, idx)
+        # gen_voxel_box_file(args_voxel_box, idx)
 
-        # tasks.append(task)
+        tasks.append(task)
 
         idx += 1
 
-    # ray.get(tasks)
+    ray.get(tasks)
 
 
 if __name__ == "__main__":
