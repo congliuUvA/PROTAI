@@ -54,6 +54,7 @@ def data_gen(args: DictConfig):
     tasks = []
     # for pdb in gz_file_list:
     for pdb in raw_pdb_dir.rglob("*.gz"):
+        print(pdb)
         # 1/4
         if idx > int(total / 4):
             logger.info("1/4 completed")
