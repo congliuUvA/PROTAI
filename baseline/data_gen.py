@@ -52,7 +52,8 @@ def data_gen(args: DictConfig):
     # ray tasks
     logger.info("Start ray tasks.")
     tasks = []
-    for pdb in gz_file_list:
+    # for pdb in gz_file_list:
+    for pdb in raw_pdb_dir.rglob("*.gz"):
         # 1/4
         if idx > int(total / 4):
             logger.info("1/4 completed")
