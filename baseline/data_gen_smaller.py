@@ -93,9 +93,10 @@ def data_gen_smaller(args: DictConfig):
                               (train_csv["fold"] == "fold_1") |
                               (train_csv["fold"] == "fold_2")]
     train_csv = train_csv.iloc[np.random.permutation(len(train_csv))]
-    train_csv = train_csv.iloc[:100000]
+    train_csv = train_csv.iloc[:10000]
 
     val_csv = dataset_csv.loc[dataset_csv["set"] == "validation"]
+    val_csv = val_csv.iloc[:2000]
 
     extract_dataset(dataset_csv=train_csv,
                     hdf5_file_dir=hdf5_file_dir,
