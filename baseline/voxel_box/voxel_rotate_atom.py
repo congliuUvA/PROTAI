@@ -16,6 +16,7 @@ from pathlib import Path
 from Bio.PDB.PDBParser import PDBParser
 from Bio.PDB.MMCIFParser import MMCIFParser
 import os
+import hydra
 
 num_of_voxels = 20
 len_of_voxel = 0.8
@@ -117,7 +118,7 @@ def cal_projected_cb_coords(c_atom, n_atom, ca_atom) -> ndarray:
     return cb_atom_coord
 
 
-def gen_ca_cb_vectors(struct: Bio.PDB.Structure.Structure) -> Tuple[List, List, List]:
+def gen_ca_cb_vectors(struct: Bio.PDB.Structure.Structure) -> Tuple[List, List, List, dict]:
     """ This function generates ca_list, cb_list and ca_cb vectors for all residues in one pbd file.
     Args:
         struct: structure in biopython.
@@ -128,6 +129,7 @@ def gen_ca_cb_vectors(struct: Bio.PDB.Structure.Structure) -> Tuple[List, List, 
     # examine whether all central atom come from the normal amino acids
     ca_cb_vectors = []
     ca_list, cb_list = [], []
+    boxes_counter = {}
     for res in struct.get_residues():
         # skip residue that are not AA.
         if res.get_resname() in RES_NAME:
@@ -158,7 +160,11 @@ def gen_ca_cb_vectors(struct: Bio.PDB.Structure.Structure) -> Tuple[List, List, 
                 ca_list.append(ca_atom)
                 cb_list.append(projected_cb_atom)
                 ca_cb_vectors.append(Vector(ca_atom.coord - cb_atom_coord))
-    return ca_list, cb_list, ca_cb_vectors
+                if res.parent.id not in boxes_counter:
+                    boxes_counter[res.parent.id] = 1
+                else:
+                    boxes_counter[res.parent.id] += 1
+    return ca_list, cb_list, ca_cb_vectors, boxes_counter
 
 
 def select_in_range_atoms(
@@ -245,16 +251,16 @@ def select_in_range_atoms(
     return voxel_atom_lists, rot_mats, central_atom_coords
 
 
-def generate_voxel_atom_lists(struct: Bio.PDB.Structure.Structure) -> Tuple[List, List, List]:
+def generate_voxel_atom_lists(struct: Bio.PDB.Structure.Structure) -> Tuple[List, List, List, dict]:
     """This function generates permitted range for every selected CA. (20 * 20 * 20), 0.8 A for dimension.
     Args:
         struct: structure in biopython.
     """
-    ca_list, cb_list, ca_cb_vectors = gen_ca_cb_vectors(struct)
+    ca_list, cb_list, ca_cb_vectors, boxes_counter = gen_ca_cb_vectors(struct)
     voxel_atom_lists, rot_mats, central_atom_coords = select_in_range_atoms(
         struct, ca_list, cb_list, ca_cb_vectors, selected_central_atom_type="CB", shift=0
     )
-    return voxel_atom_lists, rot_mats, central_atom_coords
+    return voxel_atom_lists, rot_mats, central_atom_coords, boxes_counter
 
 
 def generate_selected_element_voxel(
@@ -402,7 +408,7 @@ def cal_sasa(struct, pdb_name):
 
 def gen_voxel_binary_array(arguments, f, struct, pdb_name,
                            voxel_atom_lists: List, rot_mats: List,
-                           central_atom_coords: List):
+                           central_atom_coords: List, boxes_counter: dict,):
     """This function generates voxel binary array given the
     selected voxel atom lists and rotation matrix and central atom coordinates
 
@@ -414,6 +420,7 @@ def gen_voxel_binary_array(arguments, f, struct, pdb_name,
         voxel_atom_lists: voxel atom lists of each voxel box. (len = num of residues in total)
         rot_mats: rotation matrix of each voxel box. (len = num of residues in total)
         central_atom_coords: central atom coordinates of each box.
+        boxes_counter: {"chain_id": number_of_boxes_in_the_chain}
     """
     for idx, voxel_atom_list, rot_mat, central_atom_coord in tqdm(zip(
             np.arange(len(voxel_atom_lists)), voxel_atom_lists, rot_mats, central_atom_coords
@@ -471,6 +478,11 @@ def gen_voxel_binary_array(arguments, f, struct, pdb_name,
         dataset.attrs["residue_position"] = residue_position
         dataset.attrs["residue_icode"] = residue_icode
 
+    # record number of boxes in each chain and for whole pdb
+    for chain_id, num_boxes in boxes_counter.items():
+        f[chain_id].attrs["num_boxes"] = num_boxes
+    f.attrs["num_all_boxes"] = sum(boxes_counter.values())
+
 
 def count_res(struct: Bio.PDB.Structure.Structure) -> int:
     """Count number of residues in the given structure."""
@@ -487,7 +499,7 @@ def count_res(struct: Bio.PDB.Structure.Structure) -> int:
     return num
 
 
-# @ray.remote
+@ray.remote
 def gen_voxel_box_file(arguments, idx):
     """The main function of generating voxels.
 
@@ -499,34 +511,45 @@ def gen_voxel_box_file(arguments, idx):
     pdb_path = str(Path.cwd().joinpath(arguments.pdb_path))
     pdb_id = arguments.pdb_id
 
+    print(f"Dealing with file index: {idx}, {str(Path(arguments.hdf5_file_dir) / pdb_id) + '.hdf5'}")
+
     # Load protein structure
     struct = load_protein(arguments, pdb_name, pdb_path)
 
-    # count number if residues in the structure.
-    num_residues = count_res(struct)
-
     # start a hdf5 file
-    f = h5py.File(str(Path(arguments.hdf5_file_dir) / pdb_id) + ".hdf5", "a")
+    f = h5py.File(str(Path(arguments.hdf5_file_dir) / pdb_id) + ".hdf5", "w")
+    (
+        voxel_atom_lists, rot_mats, central_atom_coords, boxes_counter
+    ) = generate_voxel_atom_lists(struct)  # (num_ca, num_atoms_in_voxel)
 
-    print(f"Dealing with file index: {idx}, {str(Path(arguments.hdf5_file_dir) / pdb_id) + '.hdf5'}")
-
-    # count number of dataset if hdf5 file
-    num_datasets = len([box for chain in f.keys() for box in f[chain]])
+    gen_voxel_binary_array(arguments, f, struct, pdb_name,
+                           voxel_atom_lists, rot_mats, central_atom_coords, boxes_counter)
     f.close()
-    # if the hdf5 file is completed, skip the function
-    if num_datasets == num_residues:
-        print(f"skip {str(Path(arguments.hdf5_file_dir) / pdb_id)}")
-        return
 
-    else:
-        # f = h5py.File(str(Path(arguments.hdf5_file_dir) / pdb_id) + ".hdf5", "w")
-        # # generate atom lists for 20*20*20 voxels, num_of_residue in pdb file in total.
-        # (
-        #     voxel_atom_lists, rot_mats, central_atom_coords
-        # ) = generate_voxel_atom_lists(struct) # (num_ca, num_atoms_in_voxel)
-        #
-        # gen_voxel_binary_array(arguments, f, struct, pdb_name,
-        #                        voxel_atom_lists, rot_mats, central_atom_coords)
-        # f.close()
-        print(f"not the same!")
-        return
+    # # count number if residues in the structure.
+    # num_residues = count_res(struct)
+    #
+    # # start a hdf5 file
+    # f = h5py.File(str(Path(arguments.hdf5_file_dir) / pdb_id) + ".hdf5", "a")
+    #
+    # print(f"Dealing with file index: {idx}, {str(Path(arguments.hdf5_file_dir) / pdb_id) + '.hdf5'}")
+    #
+    # # count number of dataset if hdf5 file
+    # num_datasets = len([box for chain in f.keys() for box in f[chain]])
+    # f.close()
+    # # if the hdf5 file is completed, skip the function
+    # if num_datasets == num_residues:
+    #     print(f"skip {str(Path(arguments.hdf5_file_dir) / pdb_id)}")
+    #     return
+    #
+    # else:
+    #     f = h5py.File(str(Path(arguments.hdf5_file_dir) / pdb_id) + ".hdf5", "w")
+    #     # generate atom lists for 20*20*20 voxels, num_of_residue in pdb file in total.
+    #     (
+    #         voxel_atom_lists, rot_mats, central_atom_coords, boxes_counter
+    #     ) = generate_voxel_atom_lists(struct)  # (num_ca, num_atoms_in_voxel)
+    #
+    #     gen_voxel_binary_array(arguments, f, struct, pdb_name,
+    #                            voxel_atom_lists, rot_mats, central_atom_coords, boxes_counter)
+    #     f.close()
+    #     return
