@@ -482,6 +482,7 @@ def gen_voxel_binary_array(arguments, f, struct, pdb_name,
     for chain_id, num_boxes in boxes_counter.items():
         f[chain_id].attrs["num_boxes"] = num_boxes
     f.attrs["num_all_boxes"] = sum(boxes_counter.values())
+    f.attrs["num_chains"] = len(boxes_counter.keys())
 
 
 def count_res(struct: Bio.PDB.Structure.Structure) -> int:
