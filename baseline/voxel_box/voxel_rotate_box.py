@@ -149,7 +149,7 @@ def generate_voxel_atom_lists(struct: Bio.PDB.Structure.Structure) -> Tuple[List
         central_atom_coords: list of central atom coordinate after applying shift.
         vertices_coords: ndarray of 8 vertices coordinates of voxels. (num_of_res, (8, 3))
     """
-    ca_list, cb_list, ca_cb_vectors = gen_ca_cb_vectors(struct)
+    ca_list, cb_list, ca_cb_vectors, boxes_counter = gen_ca_cb_vectors(struct)
     voxel_atom_lists, central_atom_coords, vertices_coords = select_in_range_atoms(
         struct, ca_list, cb_list, ca_cb_vectors, selected_central_atom_type="CB", shift=0
     )
