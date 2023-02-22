@@ -53,10 +53,10 @@ def data_gen(args: DictConfig):
     logger.info("Start ray tasks.")
     tasks = []
     for pdb in gz_file_list:
-        # # 1/4
-        # if idx > int(total / 4):
-        #     logger.info("1/4 completed")
-        #     break
+        # 1/4
+        if idx > int(total / 4):
+            logger.info("1/4 completed")
+            break
 
         # 1/4 - 2/4
         # if idx <= int(total / 4):
@@ -112,5 +112,5 @@ def data_gen(args: DictConfig):
 if __name__ == "__main__":
     logger.info("Data gen started!")
     if not ray.is_initialized():
-        ray.init(address='10.150.1.8:6379')
+        ray.init(address='10.150.1.1:6379')
     data_gen()
