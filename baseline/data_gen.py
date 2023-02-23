@@ -117,6 +117,6 @@ def data_gen(args: DictConfig):
 
 if __name__ == "__main__":
     logger.info("Data gen started!")
-    # if not ray.is_initialized():
-    #     ray.init(address='10.150.1.8:6379')
+    if not ray.is_initialized():
+        ray.init(address='auto')
     data_gen()

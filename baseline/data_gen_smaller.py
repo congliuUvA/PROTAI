@@ -118,6 +118,6 @@ def data_gen_smaller(args: DictConfig):
 if __name__ == "__main__":
     logger.info("Data gen started!")
     if not ray.is_initialized():
-        ray.init(address='10.150.1.8:6379')
+        ray.init(address='auto')
     np.random.seed(0)
     data_gen_smaller()
