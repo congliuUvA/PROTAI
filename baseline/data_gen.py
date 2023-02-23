@@ -49,37 +49,42 @@ def data_gen(args: DictConfig):
 
     idx, total = 0, gz_file_list.shape[0]
 
+    start_end_idx = [int(i * total / 4) for i in range(5)]
+    if not hasattr(args_data, "partition"):
+        logger.debug("Please specify the partition index in command line!")
+    start, end = start_end_idx[args_data.partition - 1], start_end_idx[args_data.partition]
+
     # ray tasks
     logger.info("Start ray tasks.")
     tasks = []
-    for pdb in gz_file_list:
-        # 1/4
-        # if idx > int(total / 4):
-        #     logger.info("1/4 completed")
-        #     break
-
-        # 1/4 - 2/4
-        if idx <= int(total / 4):
-            idx += 1
-            continue
-        if idx > 2*int(total / 4):
-            logger.info("2/4 completed")
-            break
-
-        # 2/4 - 3/4
-        # if idx <= 2*int(total / 4):
+    for pdb in gz_file_list[start: end]:
+        # # 1/4
+        # # if idx > int(total / 4):
+        # #     logger.info("1/4 completed")
+        # #     break
+        #
+        # # 1/4 - 2/4
+        # if idx <= int(total / 4):
         #     idx += 1
         #     continue
-        # if idx > 3*int(total / 4):
-        #     logger.info("3/4 completed")
+        # if idx > 2*int(total / 4):
+        #     logger.info("2/4 completed")
         #     break
-
-        # 3/4 - 4/4
-        # if idx <= 3*int(total / 4):
-        #     idx += 1
-        #     continue
-        # if idx == total - 1:
-        #     logger.info("4/4 completed")
+        #
+        # # 2/4 - 3/4
+        # # if idx <= 2*int(total / 4):
+        # #     idx += 1
+        # #     continue
+        # # if idx > 3*int(total / 4):
+        # #     logger.info("3/4 completed")
+        # #     break
+        #
+        # # 3/4 - 4/4
+        # # if idx <= 3*int(total / 4):
+        # #     idx += 1
+        # #     continue
+        # # if idx == total - 1:
+        # #     logger.info("4/4 completed")
 
         # unzipped pdb file name
         pdb_pure_id = pdb.name.split(".")[0]
@@ -107,10 +112,11 @@ def data_gen(args: DictConfig):
         idx += 1
 
     ray.get(tasks)
+    logger.info(f"{args_data.partition + 1} / 4 completed!")
 
 
 if __name__ == "__main__":
     logger.info("Data gen started!")
-    if not ray.is_initialized():
-        ray.init(address='10.150.1.8:6379')
+    # if not ray.is_initialized():
+    #     ray.init(address='10.150.1.8:6379')
     data_gen()
