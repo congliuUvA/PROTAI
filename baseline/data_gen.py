@@ -49,10 +49,10 @@ def data_gen(args: DictConfig):
 
     idx, total = 0, gz_file_list.shape[0]
 
-    start_end_idx = [int(i * total / 4) for i in range(5)]
-    if not hasattr(args_data, "partition"):
+    start_end_idx = [int(i * total / args_data.num_partition) for i in range(args_data.num_partition + 1)]
+    if not hasattr(args_data, "partition_idx"):
         logger.debug("Please specify the partition index in command line!")
-    start, end = start_end_idx[args_data.partition - 1], start_end_idx[args_data.partition]
+    start, end = start_end_idx[args_data.partition_idx - 1], start_end_idx[args_data.partition_idx]
 
     # ray tasks
     logger.info("Start ray tasks.")
@@ -112,7 +112,7 @@ def data_gen(args: DictConfig):
         idx += 1
 
     ray.get(tasks)
-    logger.info(f"{args_data.partition + 1} / 4 completed!")
+    logger.info(f"{args_data.partition_idx + 1} / {args_data.num_partition_idx} completed!")
 
 
 if __name__ == "__main__":
