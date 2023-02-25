@@ -28,7 +28,10 @@ def data_gen(args: DictConfig):
     dataset_split_csv = root_dir / Path(args_data.dataset_split_csv)
 
     # load gz file list
-    gz_file_list = np.load(str(baseline_dir / "gz_file_list.npy"), allow_pickle=True)
+    gz_npy_path = baseline_dir / "gz_file_list.npy"
+    gz_file_list = np.load(str(gz_npy_path), allow_pickle=True) if gz_npy_path.exists() \
+        else np.array([pdb for pdb in raw_pdb_dir.rglob("*.gz")])
+    np.save(str(gz_npy_path), gz_file_list) if not gz_npy_path.exists() else None
 
     # download raw data set if not existed in the WR.
     if not raw_pdb_dir.exists():
