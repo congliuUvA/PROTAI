@@ -8,4 +8,4 @@
 #SBATCH -o data_gen_3.out
 
 ray start --head
-python /home/cliu3/PROTAI/baseline/data_gen.py data.num_partition=4 data.partition=3
+python /home/cliu3/PROTAI/baseline/data_gen.py data.num_partition=4 data.partition_idx=3
