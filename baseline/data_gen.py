@@ -95,24 +95,22 @@ def data_gen(args: DictConfig):
         pdb_id = pdb_pure_id + "_" + assembly_id  # e.g. "2HBS_pdb1"
 
         # if pdb id is not in the list, skip the pdb file.
-        if pdb_pure_id not in pdb_id_array:
-            continue
+        if pdb_pure_id in pdb_id_array:
+            # unzip pdb file
+            pdb_unzip = ".".join(str(pdb).split(".")[:-1])
+            os.system(f"gunzip -c {pdb} > {pdb_unzip}")
 
-        # unzip pdb file
-        pdb_unzip = ".".join(str(pdb).split(".")[:-1])
-        os.system(f"gunzip -c {pdb} > {pdb_unzip}")
+            # assign pdb info to args_voxel_box
+            args_voxel_box.pdb_name = pdb_pure_id
+            args_voxel_box.pdb_path = pdb_unzip
+            args_voxel_box.pdb_id = pdb_id
 
-        # assign pdb info to args_voxel_box
-        args_voxel_box.pdb_name = pdb_pure_id
-        args_voxel_box.pdb_path = pdb_unzip
-        args_voxel_box.pdb_id = pdb_id
+            task = gen_voxel_box_file.remote(args_voxel_box, idx)
+            # gen_voxel_box_file(args_voxel_box, idx)
 
-        task = gen_voxel_box_file.remote(args_voxel_box, idx)
-        # gen_voxel_box_file(args_voxel_box, idx)
+            tasks.append(task)
 
-        tasks.append(task)
-
-        idx += 1
+            idx += 1
 
     ray.get(tasks)
     logger.info(f"{args_data.partition_idx + 1} / {args_data.num_partition_idx} completed!")
