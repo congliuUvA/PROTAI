@@ -18,7 +18,6 @@ def data_gen(args: DictConfig):
     # configuration assignment
     args_data = args.data
     args_voxel_box = args.voxel_box
-    print(args_data.partition_idx)
     baseline_dir = Path.cwd()  # baseline/
     root_dir = baseline_dir.parent if not args_data.use_hddstore else "/hddstore/cliu3"
 
@@ -59,7 +58,7 @@ def data_gen(args: DictConfig):
     start, end = start_end_idx[args_data.partition_idx - 1], start_end_idx[args_data.partition_idx]
 
     print(start, end)
-    print(2*int(total / 4), 3*int(total / 4))
+    print(3*int(total / 4), 4*int(total / 4))
     # # ray tasks
     # logger.info("Start ray tasks.")
     # tasks = []
