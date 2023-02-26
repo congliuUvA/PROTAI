@@ -1,5 +1,6 @@
 #!/bin/bash
 
+#SBATCH -o output.out
 #SBATCH --job-name=data_generation_3
 #SBATCH --tasks=1
 #SBATCH --cpus-per-task=46
