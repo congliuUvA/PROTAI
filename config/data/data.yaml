@@ -16,7 +16,7 @@ hdf5_file_dir: voxels_hdf5
 smaller_hdf5_file_dir: smaller_voxels_hdf5
 
 # partition idx of data to generate
-partition_idx:
+partition_idx: 3
 
 # num of partitions of data generation
 num_partition: 4
