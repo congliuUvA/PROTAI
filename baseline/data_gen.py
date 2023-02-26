@@ -57,65 +57,63 @@ def data_gen(args: DictConfig):
         logger.debug("Please specify the partition index in command line!")
     start, end = start_end_idx[args_data.partition_idx - 1], start_end_idx[args_data.partition_idx]
 
-    print(start, end)
-    print(3*int(total / 4), 4*int(total / 4))
-    # # ray tasks
-    # logger.info("Start ray tasks.")
-    # tasks = []
-    # for pdb in gz_file_list[start: end]:
-    #     # # 1/4
-    #     # # if idx > int(total / 4):
-    #     # #     logger.info("1/4 completed")
-    #     # #     break
-    #     #
-    #     # # 1/4 - 2/4
-    #     # if idx <= int(total / 4):
-    #     #     idx += 1
-    #     #     continue
-    #     # if idx > 2*int(total / 4):
-    #     #     logger.info("2/4 completed")
-    #     #     break
-    #     #
-    #     # # 2/4 - 3/4
-    #     # # if idx <= 2*int(total / 4):
-    #     # #     idx += 1
-    #     # #     continue
-    #     # # if idx > 3*int(total / 4):
-    #     # #     logger.info("3/4 completed")
-    #     # #     break
-    #     #
-    #     # # 3/4 - 4/4
-    #     # # if idx <= 3*int(total / 4):
-    #     # #     idx += 1
-    #     # #     continue
-    #     # # if idx == total - 1:
-    #     # #     logger.info("4/4 completed")
-    #
-    #     # unzipped pdb file name
-    #     pdb_pure_id = pdb.name.split(".")[0]
-    #     assembly_id = pdb.name.split(".")[1]
-    #     pdb_id = pdb_pure_id + "_" + assembly_id  # e.g. "2HBS_pdb1"
-    #
-    #     # if pdb id is not in the list, skip the pdb file.
-    #     if pdb_pure_id in pdb_id_array:
-    #         # unzip pdb file
-    #         pdb_unzip = ".".join(str(pdb).split(".")[:-1])
-    #         os.system(f"gunzip -c {pdb} > {pdb_unzip}")
-    #
-    #         # assign pdb info to args_voxel_box
-    #         args_voxel_box.pdb_name = pdb_pure_id
-    #         args_voxel_box.pdb_path = pdb_unzip
-    #         args_voxel_box.pdb_id = pdb_id
-    #
-    #         task = gen_voxel_box_file.remote(args_voxel_box, idx)
-    #         # gen_voxel_box_file(args_voxel_box, idx)
-    #
-    #         tasks.append(task)
-    #
-    #         idx += 1
-    #
-    # ray.get(tasks)
-    # logger.info(f"{args_data.partition_idx + 1} / {args_data.num_partition} completed!")
+    # ray tasks
+    logger.info("Start ray tasks.")
+    tasks = []
+    for pdb in gz_file_list[start: end]:
+        # # 1/4
+        # # if idx > int(total / 4):
+        # #     logger.info("1/4 completed")
+        # #     break
+        #
+        # # 1/4 - 2/4
+        # if idx <= int(total / 4):
+        #     idx += 1
+        #     continue
+        # if idx > 2*int(total / 4):
+        #     logger.info("2/4 completed")
+        #     break
+        #
+        # # 2/4 - 3/4
+        # # if idx <= 2*int(total / 4):
+        # #     idx += 1
+        # #     continue
+        # # if idx > 3*int(total / 4):
+        # #     logger.info("3/4 completed")
+        # #     break
+        #
+        # # 3/4 - 4/4
+        # # if idx <= 3*int(total / 4):
+        # #     idx += 1
+        # #     continue
+        # # if idx == total - 1:
+        # #     logger.info("4/4 completed")
+
+        # unzipped pdb file name
+        pdb_pure_id = pdb.name.split(".")[0]
+        assembly_id = pdb.name.split(".")[1]
+        pdb_id = pdb_pure_id + "_" + assembly_id  # e.g. "2HBS_pdb1"
+
+        # if pdb id is not in the list, skip the pdb file.
+        if pdb_pure_id in pdb_id_array:
+            # unzip pdb file
+            pdb_unzip = ".".join(str(pdb).split(".")[:-1])
+            os.system(f"gunzip -c {pdb} > {pdb_unzip}")
+
+            # assign pdb info to args_voxel_box
+            args_voxel_box.pdb_name = pdb_pure_id
+            args_voxel_box.pdb_path = pdb_unzip
+            args_voxel_box.pdb_id = pdb_id
+
+            task = gen_voxel_box_file.remote(args_voxel_box, idx)
+            # gen_voxel_box_file(args_voxel_box, idx)
+
+            tasks.append(task)
+
+            idx += 1
+
+    ray.get(tasks)
+    logger.info(f"{args_data.partition_idx + 1} / {args_data.num_partition} completed!")
 
 
 if __name__ == "__main__":
