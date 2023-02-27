@@ -65,6 +65,7 @@ class VoxelsDataset(Dataset):
         self.length = 0
         self.look_up_table = {}
         self.updated_csv = self.dataset_csv.copy().reset_index()
+        self.limit_th = 8000000
         self.gen_updated_csv()
 
     def __len__(self) -> int:
@@ -117,7 +118,7 @@ class VoxelsDataset(Dataset):
                 data_idx += 1
             self.length += f[chain].attrs["num_boxes"]
             f.close()
-            if data_idx > 8000000:
+            if data_idx > self.limit_th:
                 break
 
 
