@@ -211,6 +211,6 @@ def main(args: DictConfig):
         best_acc_list.append(best_val_acc)
 
 
-if __name__ == "__main":
+if __name__ == "__main__":
     logger.info("start training!")
     main()
