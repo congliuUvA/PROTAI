@@ -170,11 +170,11 @@ def main(args: DictConfig):
     )
 
     loss_func = nn.CrossEntropyLoss()
-    model = CNN(args_model.num_classes, args_model.num_channels)
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    model = CNN(args_model.num_classes, args_model.num_channels).to(device)
+    model = nn.DataParallel(model)
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
     lr_scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda epoch: 0.99**epoch)
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = nn.DataParallel(model)
     fold_idx = "all"
     # initialize wandb
     wandb_run = wandb.init(
