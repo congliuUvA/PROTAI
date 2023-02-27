@@ -4,7 +4,6 @@ import pandas as pd
 from torch.utils.data import Dataset
 import h5py
 from typing import Union, Tuple
-import numpy as np
 import torch
 from torch import Tensor
 import torchvision.transforms as T
@@ -48,10 +47,12 @@ class VoxelsDataset(Dataset):
         self.dataset_csv = self.dataset_csv.loc[self.dataset_csv["set"] == self.set_name]
         if self.training:
             assert fold is not None
-            # take out all the folds except for the leftover fold if the set is not for test, else only taking out
-            # the selected fold as a test set in k-fold val.
-            self.dataset_csv = self.dataset_csv.loc[self.dataset_csv["fold"] != fold] if not k_fold_test \
-                else self.dataset_csv.loc[self.dataset_csv["fold"] == fold]
+            if fold != "all":
+                # take out all the folds except for the leftover fold if the set is not for test, else only taking out
+                # the selected fold as a test set in k-fold val.
+                self.dataset_csv = self.dataset_csv.loc[self.dataset_csv["fold"] != fold] if not k_fold_test else \
+                    self.dataset_csv.loc[self.dataset_csv["fold"] == fold]
+
         self.residue_name = [
             "ALA", "ARG", "ASN", "ASP", "CYS",
             "GLU", "GLN", "GLY", "HIS", "ILE",
@@ -62,7 +63,8 @@ class VoxelsDataset(Dataset):
         self.transform = transform
         self.len_accumulate_list = []
         self.length = 0
-        self.updated_csv = self.dataset_csv.copy()
+        self.look_up_table = {}
+        self.updated_csv = self.dataset_csv.copy().reset_index()
         self.gen_updated_csv()
 
     def __len__(self) -> int:
@@ -84,29 +86,20 @@ class VoxelsDataset(Dataset):
         """
         # given one specific data instance idx, find the corresponding position in
         # accumulated length list, the idx + 1 represents the index of the row in the csv file
-        row_idx = np.where(np.array(self.len_accumulate_list) <= idx)[0][0] + 1 \
-            if idx >= self.len_accumulate_list[0] else 0
-        # use the given idx to minus the last accumulated length to derive the residual index in
-        # the row hdf5 file
-        residue_idx = idx - self.len_accumulate_list[row_idx - 1] if row_idx > 0 else idx
-        row = self.updated_csv.iloc[row_idx]
-        hdf5_file = f"{row.id}_pdb1.hdf5"
-        chain_id = row.full_id.split("_")[-1]
-        f = h5py.File(hdf5_file, "r")
-        data = f[chain_id][list(f[chain_id].keys())[residue_idx]]
-        label_idx = self.residue_name_dic[str(data.attrs["residue_name"])]
-        label = torch.zeros(len(self.residue_name))
-        label[label_idx] = 1.0
-        voxel = torch.tensor(data[:]) + 0
-        # use gaussian fiter
-        if self.transform:
-            voxel = self.transform(voxel)
+        info = self.look_up_table[idx]
+        hdf5_file, chain_id, residue_idx = info.split("$")[0], info.split("$")[1], info.split("$")[2]
+        with h5py.File(hdf5_file, "r") as f:
+            data = f[chain_id][residue_idx]
+            label_idx = self.residue_name_dic[str(data.attrs["residue_name"])]
+            label = torch.zeros(len(self.residue_name))
+            label[label_idx] = 1.0
+            voxel = (torch.tensor(data[:]) + 0).type(torch.FloatTensor)
 
         return voxel, label
 
     def gen_updated_csv(self):
         # length accumulate list, prepared for indexing specific box in the data set.
-        delete_row_idx = []
+        data_idx = 0
         # iterate through all files in sub set
         for idx, row in enumerate(tqdm(self.dataset_csv.itertuples(), total=len(self.dataset_csv.index))):
             pdb_full_id = row.full_id
@@ -114,16 +107,18 @@ class VoxelsDataset(Dataset):
             pdb_id = row.id
             hdf5_file = self.hdf5_files_path / f"{pdb_id}_pdb1.hdf5"
             if not hdf5_file.exists():
-                delete_row_idx.append(idx)
                 continue
             f = h5py.File(hdf5_file, "r")
-            if chain not in list(f.keys()) or len(f[chain]) == 0:
-                delete_row_idx.append(idx)
+            if chain not in list(f.keys()):
                 continue
             # each box count as one data sample
-            self.length += len(f[chain]["num_boxes_chain"])
-            self.len_accumulate_list.append(self.length)
-            self.updated_csv.drop(index=[delete_row_idx])
+            for box_idx in f[chain]:
+                self.look_up_table[data_idx] = str(hdf5_file) + "$" + str(chain) + "$" + box_idx
+                data_idx += 1
+            self.length += f[chain].attrs["num_boxes"]
+            f.close()
+            if data_idx > 8000000:
+                break
 
 
 class GaussianFilter(object):

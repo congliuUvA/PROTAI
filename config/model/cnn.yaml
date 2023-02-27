@@ -16,3 +16,5 @@ num_classes: 20
 use_transformation: True
 # model checkpoint path
 model_ckpt_path: model_checkpoints
+# number of workers
+num_workers: 8
