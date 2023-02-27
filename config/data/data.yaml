@@ -20,3 +20,6 @@ partition_idx: 3
 
 # num of partitions of data generation
 num_partition: 4
+
+# use gaussian transformation
+use_transform: False
