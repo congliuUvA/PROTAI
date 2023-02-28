@@ -5,7 +5,7 @@ folds: 5
 # model name
 model_name: CNN
 # batch size
-batch_size: 1024
+batch_size: 512
 # number of epochs need to be run
 epochs: 9
 # number of input channels, C, N, O, S
@@ -18,3 +18,5 @@ use_transform: False
 model_ckpt_path: model_checkpoints
 # number of workers
 num_workers: 8
+# learning rate
+learning_rate: 1e-4
