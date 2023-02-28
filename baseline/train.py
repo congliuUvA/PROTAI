@@ -50,33 +50,33 @@ def training(
             acc_train_step = (preds_int == labels_int).sum() / preds.shape[0]
             acc_train += acc_train_step
             progress_bar.set_postfix(acc=f'{acc_train / (idx + 1):.3f}')
-        wandb_run.log({"acc_train": acc_train / (idx + 1)})
+            wandb_run.log({"acc_train": acc_train / (idx + 1)})
 
-        # run a val process every 2000 batches
-        if idx % 2000 == 1999:
-            model.eval()
-            progress_bar = tqdm(val_loader)
-            acc_val = 0
-            for idx, data_val in enumerate(progress_bar):
-                loss_val, preds, labels = val_step(
-                    data_val, model, loss_func, device
+            # run a val process every 2000 batches
+            if idx % 10 == 9:
+                model.eval()
+                progress_bar = tqdm(val_loader)
+                acc_val = 0
+                for idx, data_val in enumerate(progress_bar):
+                    loss_val, preds, labels = val_step(
+                        data_val, model, loss_func, device
+                    )
+                    wandb_run.log({"loss_val": loss_val})
+                    labels_int = torch.where(labels == 1)[-1].cpu()
+                    preds_int = torch.max(preds.detach(), dim=1)[-1].cpu()
+                    acc_val_step = (preds_int == labels_int).sum() / preds.shape[0]
+                    acc_val += acc_val_step
+                    progress_bar.set_postfix(acc=f'{acc_val / (idx + 1):.3f}')
+                    wandb_run.log({"acc_val": acc_val / (idx + 1)})
+                prev_acc_val = best_acc_val
+                best_acc_val, best_ckpt_path = update_best_checkpoint(
+                    acc_val, best_acc_val, best_ckpt_path,
+                    fold, epoch, checkpoint_dir, model,
+                    optimizer, lr_scheduler
                 )
-                wandb_run.log({"loss_val": loss_val})
-                labels_int = torch.where(labels == 1)[-1].cpu()
-                preds_int = torch.max(preds.detach(), dim=1)[-1].cpu()
-                acc_val_step = (preds_int == labels_int).sum() / preds.shape[0]
-                acc_val += acc_val_step
-                progress_bar.set_postfix(acc=f'{acc_val / (idx + 1):.3f}')
-            wandb_run.log({"acc_val": acc_val / (idx + 1)})
-            prev_acc_val = best_acc_val
-            best_acc_val, best_ckpt_path = update_best_checkpoint(
-                acc_val, best_acc_val, best_ckpt_path,
-                fold, epoch, checkpoint_dir, model,
-                optimizer, lr_scheduler
-            )
-            # if acc on val is decreased or not increased by 0.1%, step learning rate.
-            if (best_acc_val - prev_acc_val) / prev_acc_val <= 0.001:
-                lr_step_bool = True
+                # if acc on val is decreased or not increased by 0.1%, step learning rate.
+                if (best_acc_val - prev_acc_val) / prev_acc_val <= 0.001:
+                    lr_step_bool = True
 
         # regularly save model once one epoch is finished.
         model_save_path = checkpoint_dir / f"{fold}_CNN_{epoch}.pt"
