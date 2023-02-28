@@ -20,3 +20,5 @@ model_ckpt_path: model_checkpoints
 num_workers: 8
 # learning rate
 learning_rate: 1e-4
+# drop out rate
+drop_out: 0

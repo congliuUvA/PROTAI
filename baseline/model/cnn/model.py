@@ -3,7 +3,7 @@ from torch import nn, tensor
 
 
 class CNN(nn.Module):
-    def __init__(self, num_classes: int, in_channels: int):
+    def __init__(self, num_classes: int, in_channels: int, drop_out: float):
         """Initialization.
 
         Args:
@@ -20,8 +20,8 @@ class CNN(nn.Module):
         self.mlp2 = nn.Linear(1000, 100)
         self.mlp3 = nn.Linear(100, num_classes)
         self.softmax = nn.functional.softmax
-        self.dropout_3d = nn.Dropout3d(p=0.3)
-        self.dropout = nn.Dropout(p=0.3)
+        self.dropout_3d = nn.Dropout3d(p=drop_out)
+        self.dropout = nn.Dropout(p=drop_out)
         self.batch_norm0 = nn.BatchNorm3d(in_channels)
         self.batch_norm1 = nn.BatchNorm3d(100)
         self.batch_norm2 = nn.BatchNorm3d(200)
