@@ -33,12 +33,12 @@ def training(
     checkpoint_dir = Path.cwd() / "model_checkpoints"
     checkpoint_dir.mkdir() if not checkpoint_dir.exists() else None
     lr_step_bool = False
-
+    train_log_idx, val_log_idx = 0, 0
     for epoch in range(epochs):
         progress_bar = tqdm(train_loader)
         model.train()
         acc_train = 0
-        for train_idx, data_train in enumerate(progress_bar):
+        for idx, data_train in enumerate(progress_bar):
             loss_train, preds, labels, lr_step_bool = train_step(
                 data_train, model, loss_func,
                 optimizer, lr_scheduler, lr_step_bool,
@@ -48,17 +48,18 @@ def training(
             preds_int = torch.max(preds.detach(), dim=1)[-1].cpu()
             acc_train_step = (preds_int == labels_int).sum() / preds.shape[0]
             acc_train += acc_train_step
-            progress_bar.set_postfix(acc=f'{acc_train / (train_idx + 1):.3f}')
-            wandb_run.log({"loss_train": loss_train, "train_axes": train_idx})
-            wandb_run.log({"acc_train": acc_train / (train_idx + 1), "train_axes": train_idx})
-            wandb_run.log({"learning_rate": optimizer.param_groups[0]['lr'], "train_axes": train_idx})
+            progress_bar.set_postfix(acc=f'{acc_train / (idx + 1):.3f}')
+            wandb_run.log({"loss_train": loss_train, "train_axes": train_log_idx})
+            wandb_run.log({"acc_train": acc_train / (idx + 1), "train_axes": train_log_idx})
+            wandb_run.log({"learning_rate": optimizer.param_groups[0]['lr'], "train_axes": train_log_idx})
+            train_log_idx += 1
 
             # run a val process every 2000 batches
-            if train_idx % 2000 == 1999:
+            if idx % 2000 == 1999:
                 model.eval()
                 progress_bar = tqdm(val_loader)
                 acc_val = 0
-                for val_idx, data_val in enumerate(progress_bar):
+                for idx, data_val in enumerate(progress_bar):
                     preds, labels = val_step(
                         data_val, model, loss_func, device
                     )
@@ -66,11 +67,12 @@ def training(
                     preds_int = torch.max(preds.detach(), dim=1)[-1].cpu()
                     acc_val_step = (preds_int == labels_int).sum() / preds.shape[0]
                     acc_val += acc_val_step
-                    progress_bar.set_postfix(acc=f'{acc_val / (val_idx + 1):.3f}')
-                    wandb_run.log({"acc_val": acc_val / (val_idx + 1), "val_axes": val_idx})
+                    progress_bar.set_postfix(acc=f'{acc_val / (idx + 1):.3f}')
+                    wandb_run.log({"acc_val": acc_val / (idx + 1), "val_axes": val_log_idx})
+                    val_log_idx += 1
                 prev_acc_val = best_acc_val
                 best_acc_val, best_ckpt_path = update_best_checkpoint(
-                    acc_val, best_acc_val, best_ckpt_path,
+                    acc_val / (idx + 1), best_acc_val, best_ckpt_path,
                     fold, epoch, checkpoint_dir, model,
                     optimizer, lr_scheduler
                 )
