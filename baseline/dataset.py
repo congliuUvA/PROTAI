@@ -8,6 +8,7 @@ import torch
 from torch import Tensor
 import torchvision.transforms as T
 from tqdm import tqdm
+import numpy as np
 
 
 class VoxelsDataset(Dataset):
@@ -36,6 +37,8 @@ class VoxelsDataset(Dataset):
             k_fold_test: set to True if the dataset is used as k-fold test set.
             transform: transformation applied to the data set.
         """
+        self.proportion_list = None
+        self.freq = None
         self.len_accumulate_list = None
         self.hdf5_files_path = hdf5_files_path
         self.dataset_split_csv_path = dataset_split_csv_path
@@ -68,6 +71,10 @@ class VoxelsDataset(Dataset):
         self.updated_csv = self.dataset_csv.copy().sample(frac=1).reset_index()
         self.limit_th = 8000000
         self.gen_updated_csv()
+        # if dataset is used for training, generate weight list for each of the instance,
+        # WeightedSampler will sample instances based on their weights, thus yielding batches with similar distribution.
+        if self.training:
+            self.gen_proportion_list()
 
     def __len__(self) -> int:
         """Return the length of the dataset.
@@ -115,12 +122,30 @@ class VoxelsDataset(Dataset):
                 continue
             # each box count as one data sample
             for box_idx in f[chain]:
-                self.look_up_table[data_idx] = str(hdf5_file) + "$" + str(chain) + "$" + box_idx
+                self.look_up_table[data_idx] = str(hdf5_file) + "$" + \
+                                               str(chain) + "$" + \
+                                               box_idx + "$" + \
+                                               f[chain][box_idx].attrs["residue_name"]
                 data_idx += 1
             self.length += f[chain].attrs["num_boxes"]
             f.close()
             if data_idx > self.limit_th:
                 break
+
+    def gen_proportion_list(self):
+        self.freq = {}
+        self.proportion_list = []
+        for idx, value in self.look_up_table.items():
+            if value.split("$")[-1] not in self.freq:
+                self.freq[value.split("$")[-1]] = 1
+            else:
+                self.freq[value.split("$")[-1]] += 1
+
+        for idx, value in self.look_up_table.items():
+            self.proportion_list.append(self.freq[value.split("$")[-1]])
+
+        self.proportion_list = np.array(self.proportion_list) / sum(self.proportion_list)
+        return self.proportion_list
 
 
 class GaussianFilter(object):
