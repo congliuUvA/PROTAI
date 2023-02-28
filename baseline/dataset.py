@@ -66,7 +66,7 @@ class VoxelsDataset(Dataset):
         self.look_up_table = {}
         # shuffle the data set to make sure the distribution is somewhat similar
         self.updated_csv = self.dataset_csv.copy().sample(frac=1).reset_index()
-        self.limit_th = 8000000
+        self.limit_th = 100
         self.gen_updated_csv()
 
     def __len__(self) -> int:
