@@ -183,9 +183,9 @@ def main(args: DictConfig):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = CNN(args_model.num_classes, args_model.num_channels, args_model.drop_out).to(device)
     model = nn.DataParallel(model)
-    optimizer = torch.optim.Adam(model.parameters(), lr=args_model.learning_rate)
+    # optimizer = torch.optim.Adam(model.parameters(), lr=args_model.learning_rate)
     optimizer = torch.optim.SGD(model.parameters(), lr=args_model.learning_rate, momentum=0.75)
-    lr_scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda epoch: 0.99**epoch)
+    lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=1, gamma=0.5)
     fold_idx = "all"
     # initialize wandb
     wandb_run = wandb.init(
