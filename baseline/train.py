@@ -64,7 +64,6 @@ def training(
             acc_val_step = (preds_int == labels_int).sum() / preds.shape[0]
             acc_val += acc_val_step
             progress_bar.set_postfix(acc=f'{acc_val / (idx + 1):.3f}')
-        acc_val = acc_val / (idx + 1)
         wandb_run.log({"acc_val": acc_val / (idx + 1)})
         best_acc_val, best_ckpt_path = update_best_checkpoint(
             acc_val, best_acc_val, best_ckpt_path,
