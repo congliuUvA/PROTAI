@@ -64,7 +64,8 @@ class VoxelsDataset(Dataset):
         self.len_accumulate_list = []
         self.length = 0
         self.look_up_table = {}
-        self.updated_csv = self.dataset_csv.copy().reset_index()
+        # shuffle the data set to make sure the distribution is somewhat similar
+        self.updated_csv = self.dataset_csv.copy().sample(frac=1).reset_index()
         self.limit_th = 8000000
         self.gen_updated_csv()
 
