@@ -28,7 +28,7 @@ def training(
 ):
     scaler = torch.cuda.amp.GradScaler(enabled=device.type != "cpu")
 
-    best_acc_val = 1
+    best_acc_val = 0
     best_ckpt_path = ""
     checkpoint_dir = Path.cwd() / "model_checkpoints"
     checkpoint_dir.mkdir() if not checkpoint_dir.exists() else None
@@ -54,7 +54,7 @@ def training(
             wandb_run.log({"learning_rate": optimizer.param_groups[0]['lr']})
 
             # run a val process every 2000 batches
-            if idx % 10 == 9:
+            if idx % 2000 == 1999:
                 model.eval()
                 progress_bar = tqdm(val_loader)
                 acc_val = 0
