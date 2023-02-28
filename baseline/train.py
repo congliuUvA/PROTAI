@@ -173,7 +173,7 @@ def main(args: DictConfig):
     )
     val_dataloader = DataLoader(
         dataset=val_set,
-        batch_size=args_model.batch_size,
+        batch_size=3500,
         shuffle=False,
         num_workers=args_model.num_workers,
         pin_memory=True,
