@@ -107,6 +107,7 @@ def train_step(data_train,
     scaler.update()
     if lr_step_bool:
         lr_scheduler.step()
+    lr_step_bool = False
     return loss_train.item(), preds, labels, lr_step_bool
 
 
