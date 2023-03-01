@@ -162,7 +162,7 @@ def get_optimizer(args_model, model):
 
     if args_model.optimizer == "SGD":
         optimizer = torch.optim.SGD(model.parameters(), lr=args_model.lr, momentum=0.75)
-        lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=500, gamma=0.5)
+        lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=7000, gamma=0.1)
 
     return optimizer, lr_scheduler
 
