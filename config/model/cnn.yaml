@@ -23,7 +23,7 @@ num_workers: 8
 # optimizer
 optimizer: SGD
 # base learning rate
-lr: 5e-2
+lr: 1e-3
 # learning rate maximum
 lr_max: 5e-3
 # learning rate min
