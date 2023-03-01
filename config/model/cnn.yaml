@@ -20,7 +20,19 @@ use_transform: False
 model_ckpt_path: model_checkpoints
 # number of workers
 num_workers: 8
-# learning rate
-learning_rate: 0.05
+# optimizer
+optimizer: Adam
+# base learning rate
+lr: 5e-3
+# learning rate maximum
+lr_max: 5e-3
+# learning rate min
+lr_min: 1e-5
+# learning rate cosine period
+lr_period: 100
+# warm up step
+warm_up_step: 50
+# validation step: after x steps the validation process end
+validation_step: 500
 # drop out rate
 drop_out: 0

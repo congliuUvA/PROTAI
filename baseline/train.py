@@ -10,11 +10,13 @@ from model.cnn.model import CNN
 import torch.nn as nn
 from utils.log import get_logger
 from omegaconf import DictConfig, OmegaConf
+import math
 
 logger = get_logger(__name__)
 
 
 def training(
+        args_model,
         model,
         fold,
         epochs,
@@ -32,16 +34,15 @@ def training(
     best_ckpt_path = ""
     checkpoint_dir = Path.cwd() / "model_checkpoints"
     checkpoint_dir.mkdir() if not checkpoint_dir.exists() else None
-    lr_step_bool = False
     train_log_idx, val_log_idx = 0, 0
     for epoch in range(epochs):
         progress_bar = tqdm(train_loader)
         model.train()
         acc_train = 0
         for idx, data_train in enumerate(progress_bar):
-            loss_train, preds, labels, lr_step_bool = train_step(
+            loss_train, preds, labels = train_step(
                 data_train, model, loss_func,
-                optimizer, lr_scheduler, lr_step_bool,
+                optimizer, lr_scheduler,
                 device, scaler
             )
             labels_int = torch.where(labels == 1)[-1].cpu()
@@ -70,15 +71,13 @@ def training(
                     progress_bar.set_postfix(acc=f'{acc_val / (idx + 1):.3f}')
                     wandb_run.log({"acc_val": acc_val / (idx + 1), "val_axes": val_log_idx})
                     val_log_idx += 1
-                prev_acc_val = best_acc_val
+                    if idx > args_model.validation_step:
+                        break
                 best_acc_val, best_ckpt_path = update_best_checkpoint(
                     acc_val / (idx + 1), best_acc_val, best_ckpt_path,
                     fold, epoch, checkpoint_dir, model,
                     optimizer, lr_scheduler
                 )
-                # if acc on val is decreased or not increased by 0.1%, step learning rate.
-                if (best_acc_val - prev_acc_val) / (prev_acc_val + 1e-7) <= 0.001:
-                    lr_step_bool = True
 
         # regularly save model once one epoch is finished.
         model_save_path = checkpoint_dir / f"{fold}_CNN_{epoch}.pt"
@@ -92,7 +91,6 @@ def train_step(data_train,
                loss_func,
                optimizer,
                lr_scheduler,
-               lr_step_bool,
                device,
                scaler):
     voxel_boxes, labels = data_train
@@ -106,10 +104,8 @@ def train_step(data_train,
     scaler.unscale_(optimizer)
     scaler.step(optimizer)
     scaler.update()
-    if lr_step_bool:
-        lr_scheduler.step()
-        lr_step_bool = False
-    return loss_train.item(), preds, labels, lr_step_bool
+    lr_scheduler.step()
+    return loss_train.item(), preds, labels,
 
 
 def val_step(data_val, model, loss_func, device):
@@ -121,7 +117,7 @@ def val_step(data_val, model, loss_func, device):
 
 
 def update_best_checkpoint(acc_val, best_acc_val, best_checkpoint_path,
-                           fold, epoch, checkpoint_dir, model, optimizer, lr_scheduler,):
+                           fold, epoch, checkpoint_dir, model, optimizer, lr_scheduler, ):
     if acc_val > best_acc_val:
         best_acc_val = acc_val
         best_checkpoint_path = checkpoint_dir / f"{fold}_CNN_{epoch}_best_acc_{acc_val}.pt"
@@ -130,11 +126,11 @@ def update_best_checkpoint(acc_val, best_acc_val, best_checkpoint_path,
 
 
 def save_checkpoint(
-    model: nn.Module,
-    optimizer: torch.optim.Optimizer,
-    lr_scheduler: torch.optim.lr_scheduler.LambdaLR,
-    checkpoint_path: str,
-    epoch: int,
+        model: nn.Module,
+        optimizer: torch.optim.Optimizer,
+        lr_scheduler: torch.optim.lr_scheduler.LambdaLR,
+        checkpoint_path: str,
+        epoch: int,
 ):
     """Save a model's checkpoint.
 
@@ -152,6 +148,27 @@ def save_checkpoint(
         "lr_scheduler": lr_scheduler.state_dict(),
     }
     torch.save(state, checkpoint_path)
+
+
+def get_optimizer(args_model, model):
+    optimizer, lr_scheduler = None, None
+    if args_model.optimizer == "Adam":
+        optimizer = torch.optim.Adam(model.parameters(), lr=args_model.lr)
+        lr_func = lambda cur_iter: cur_iter / args_model.warm_up_step \
+            if cur_iter < args_model.warm_up_step \
+            else (args_model.lr_min +
+                  0.5 * (args_model.lr_max - args_model.lr_min) *
+                  (1.0 + math.cos(
+                      (cur_iter - args_model.warm_up_step) / (args_model.lr_period - args_model.warm_up_step) * math.pi)
+                   )
+                  ) / args_model.lr_max
+        lr_scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lr_func)
+
+    if args_model.optimizer == "SGD":
+        optimizer = torch.optim.SGD(model.parameters(), lr=args_model.lr, momentum=0.75)
+        lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=500, gamma=0.5)
+
+    return optimizer, lr_scheduler
 
 
 @hydra.main(version_base=None, config_path="../config", config_name="config")
@@ -175,7 +192,7 @@ def main(args: DictConfig):
     )
     val_dataloader = DataLoader(
         dataset=val_set,
-        batch_size=3500,
+        batch_size=4096,
         shuffle=False,
         num_workers=args_model.num_workers,
         pin_memory=True,
@@ -185,9 +202,7 @@ def main(args: DictConfig):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = CNN(args_model.num_classes, args_model.num_channels, args_model.drop_out).to(device)
     model = nn.DataParallel(model)
-    # optimizer = torch.optim.Adam(model.parameters(), lr=args_model.learning_rate)
-    optimizer = torch.optim.SGD(model.parameters(), lr=args_model.learning_rate, momentum=0.75)
-    lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=1, gamma=0.5)
+    optimizer, lr_scheduler = get_optimizer(args_model, model)
     fold_idx = "all"
     # initialize wandb
     wandb_run = wandb.init(
@@ -225,7 +240,7 @@ def main(args: DictConfig):
         )
 
         best_ckpt_path, best_val_acc = training(
-            model, fold_idx, args_model.epochs, train_dataloader,
+            args_model, model, fold_idx, args_model.epochs, train_dataloader,
             val_dataloader, loss_func, optimizer, lr_scheduler,
             device, wandb_run
         )
