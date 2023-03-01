@@ -1,7 +1,7 @@
 # configuration of 3DCNN
 
 #use sampler to generate batches with similar distributions.
-use_sampler: False
+use_sampler: True
 # number of folds in training set.
 folds: 5
 # model name
@@ -23,7 +23,7 @@ num_workers: 8
 # optimizer
 optimizer: SGD
 # base learning rate
-lr: 1e-4
+lr: 1e-3
 # learning rate maximum
 lr_max: 5e-3
 # learning rate min
@@ -37,4 +37,4 @@ validation_step: 500
 # drop out rate
 drop_out: 0
 # model checkpoint path
-ckpt_path: all_CNN_1_best_acc_0.5191727876663208.pt
+ckpt_path: None
