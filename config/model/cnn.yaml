@@ -29,9 +29,9 @@ lr_max: 5e-3
 # learning rate min
 lr_min: 1e-5
 # learning rate cosine period
-lr_period: 100
+lr_period: 1000
 # warm up step
-warm_up_step: 50
+warm_up_step: 500
 # validation step: after x steps the validation process end
 validation_step: 500
 # drop out rate

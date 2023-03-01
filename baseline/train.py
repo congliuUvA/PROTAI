@@ -69,8 +69,6 @@ def training(
             progress_bar.set_postfix(acc=f'{acc_val / (idx + 1):.3f}')
             wandb_run.log({"acc_val": acc_val / (idx + 1), "val_axes": val_log_idx})
             val_log_idx += 1
-            if idx > args_model.validation_step:
-                break
         best_acc_val, best_ckpt_path = update_best_checkpoint(
             acc_val / (idx + 1), best_acc_val, best_ckpt_path,
             fold, epoch, checkpoint_dir, model,
