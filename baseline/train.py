@@ -201,7 +201,7 @@ def main(args: DictConfig):
     model = CNN(args_model.num_classes, args_model.num_channels, args_model.drop_out)
     model = nn.DataParallel(model)
     model = model.to(device)
-    if args_model.ckpt_path is not None:
+    if args_model.ckpt_path is not "":
         model_path = parent_path / "model_checkpoints" / args_model.ckpt_path
         state_dict = torch.load(model_path)
         model.load_state_dict(state_dict["state_dict"])
