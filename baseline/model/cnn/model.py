@@ -22,7 +22,7 @@ class CNN(nn.Module):
         self.softmax = nn.functional.softmax
         self.dropout_3d = nn.Dropout3d(p=drop_out)
         self.dropout = nn.Dropout(p=drop_out)
-        self.batch_norm0 = nn.BatchNorm3d(in_channels)
+        self.instance_norm0 = nn.InstanceNorm3d(in_channels)
         self.batch_norm1 = nn.BatchNorm3d(100)
         self.batch_norm2 = nn.BatchNorm3d(200)
         self.batch_norm3 = nn.BatchNorm3d(400)
@@ -33,7 +33,7 @@ class CNN(nn.Module):
         Args:
             x: input signal.
         """
-        x = self.batch_norm0(x)
+        x = self.instance_norm0(x)
 
         x = self.dropout_3d(self.relu(self.conv_layer1(x)))
         x = self.batch_norm1(x)
