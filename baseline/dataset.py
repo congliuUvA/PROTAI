@@ -24,6 +24,7 @@ class VoxelsDataset(Dataset):
             fold: Union[str, None] = None,
             k_fold_test: bool = False,
             transform=None,
+            use_sampler: bool = False,
     ):
         """Init.
 
@@ -55,7 +56,7 @@ class VoxelsDataset(Dataset):
                 # the selected fold as a test set in k-fold val.
                 self.dataset_csv = self.dataset_csv.loc[self.dataset_csv["fold"] != fold] if not k_fold_test else \
                     self.dataset_csv.loc[self.dataset_csv["fold"] == fold]
-
+        self.use_sampler = use_sampler
         self.residue_name = [
             "ALA", "ARG", "ASN", "ASP", "CYS",
             "GLU", "GLN", "GLY", "HIS", "ILE",
@@ -73,7 +74,7 @@ class VoxelsDataset(Dataset):
         self.gen_updated_csv()
         # if dataset is used for training, generate weight list for each of the instance,
         # WeightedSampler will sample instances based on their weights, thus yielding batches with similar distribution.
-        if self.training:
+        if self.training and self.use_sampler:
             self.gen_proportion_list()
 
     def __len__(self) -> int:
@@ -122,10 +123,8 @@ class VoxelsDataset(Dataset):
                 continue
             # each box count as one data sample
             for box_idx in f[chain]:
-                self.look_up_table[data_idx] = str(hdf5_file) + "$" + \
-                                               str(chain) + "$" + \
-                                               box_idx + "$" + \
-                                               f[chain][box_idx].attrs["residue_name"]
+                label = "" if not self.use_sampler else f[chain][box_idx].attrs["residue_name"]
+                self.look_up_table[data_idx] = str(hdf5_file) + "$" + str(chain) + "$" + box_idx + "$" + label
                 data_idx += 1
             self.length += f[chain].attrs["num_boxes"]
             f.close()
@@ -150,6 +149,7 @@ class VoxelsDataset(Dataset):
 
 class GaussianFilter(object):
     """Transformation for adding gaussian noise according to different types of atoms."""
+
     def __init__(self, kernel_size):
         """init module."""
         self.sigma_list = [1.7, 1.45, 1.37, 1.7]  # C, N, O, S van der waals radii
@@ -169,8 +169,3 @@ class GaussianFilter(object):
             img[i] = T.GaussianBlur(kernel_size=self.kernel_size, sigma=self.sigma_list[i])(img[i])
 
         return img
-
-
-
-
-

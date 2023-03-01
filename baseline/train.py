@@ -219,19 +219,22 @@ def main(args: DictConfig):
             fold=fold_idx,
             k_fold_test=False,
             transform=transformation,
+            use_sampler=args_model.use_sampler,
         )
-        weighted_sampler = WeightedRandomSampler(
-            weights=train_set.proportion_list,
-            num_samples=train_set.length,
-            replacement=True,
-        )
-        sampler = BatchSampler(
-            sampler=weighted_sampler,
-            batch_size=args_model.batch_size,
-            drop_last=False
-        )
+        sampler = None
+        if args_model.use_sampler:
+            weighted_sampler = WeightedRandomSampler(
+                weights=train_set.proportion_list,
+                num_samples=train_set.length,
+                replacement=True,
+            )
+            sampler = BatchSampler(
+                sampler=weighted_sampler,
+                batch_size=args_model.batch_size,
+                drop_last=False
+            )
         train_dataloader = DataLoader(
-            sampler=sampler if args_model.use_sampler else None,
+            sampler=sampler,
             dataset=train_set,
             batch_size=args_model.batch_size,
             shuffle=True,
