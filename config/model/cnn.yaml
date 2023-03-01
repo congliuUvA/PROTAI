@@ -7,7 +7,7 @@ folds: 5
 # model name
 model_name: CNN
 # batch size
-batch_size: 1024
+batch_size: 256
 # number of epochs need to be run
 epochs: 9
 # number of input channels, C, N, O, S
@@ -36,3 +36,5 @@ warm_up_step: 500
 validation_step: 500
 # drop out rate
 drop_out: 0
+# model checkpoint path
+ckpt_path: all_CNN_1_best_acc_0.5191727876663208.pt

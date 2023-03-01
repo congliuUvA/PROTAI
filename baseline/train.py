@@ -198,7 +198,13 @@ def main(args: DictConfig):
 
     loss_func = nn.CrossEntropyLoss()
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = CNN(args_model.num_classes, args_model.num_channels, args_model.drop_out).to(device)
+    model = CNN(args_model.num_classes, args_model.num_channels, args_model.drop_out)
+    if args_model.ckpt_path:
+        model_path = parent_path.parent / "model_checkpoints" / args_model.ckpt_path
+        state_dict = torch.load(model_path)
+        model.load_state_dict(state_dict)
+    model = model.to(device)
+
     model = nn.DataParallel(model)
     optimizer, lr_scheduler = get_optimizer(args_model, model)
     fold_idx = "all"
