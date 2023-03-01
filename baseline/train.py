@@ -202,7 +202,7 @@ def main(args: DictConfig):
     if args_model.ckpt_path:
         model_path = parent_path / "model_checkpoints" / args_model.ckpt_path
         state_dict = torch.load(model_path)
-        model.load_state_dict(state_dict)
+        model.load_state_dict(state_dict["state_dict"])
     model = model.to(device)
 
     model = nn.DataParallel(model)

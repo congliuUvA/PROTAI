@@ -14,8 +14,8 @@ logger = get_logger(__name__)
 def test(ckpt_path: Path, test_dataloader: DataLoader, device):
     # load model
     state_dict = torch.load(str(ckpt_path))
-    model = CNN(20, 4)
-    model.load_state_dict(state_dict)
+    model = CNN(20, 4, 0)
+    model.load_state_dict(state_dict["state_dict"])
     model = model.to(device)
     model.eval()
 
