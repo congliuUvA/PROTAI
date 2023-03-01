@@ -219,6 +219,7 @@ def main(args: DictConfig):
             fold=fold_idx,
             k_fold_test=False,
             transform=transformation,
+            use_sampler=args_model.use_sampler
         )
         sampler = None
         if args_model.use_sampler:
