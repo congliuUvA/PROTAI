@@ -154,7 +154,6 @@ class VoxelsDataset(Dataset):
             for i, box_info in enumerate(boxes_info):
                 self.look_up_table[i] = box_info
 
-    @ray.remote
     def get_look_up_table(self, row, boxes_info):
         pdb_full_id = row.full_id
         chain = pdb_full_id.split("_")[-1]
