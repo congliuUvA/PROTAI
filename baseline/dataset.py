@@ -140,15 +140,20 @@ class VoxelsDataset(Dataset):
         # iterate through all files in sub set
         for idx, row in enumerate(tqdm(self.dataset_csv.itertuples(), total=len(self.dataset_csv.index))):
             tasks.append(self.get_look_up_table.remote(self, row))
-            if idx % 10000 == 9999:
-                results = ray.get(tasks)
-                tasks = []
-                for result in results:
-                    boxes_info.extend(result)
-                num_data += len(boxes_info)
-                if num_data > self.limit_th:
-                    break
+            # if idx % 10000 == 9999:
+            #     results = ray.get(tasks)
+            #     tasks = []
+            #     for result in results:
+            #         boxes_info.extend(result)
+            #     num_data += len(boxes_info)
+            #     if num_data > self.limit_th:
+            #         break
+        results = ray.get(tasks)
+        for result in results:
+            boxes_info.extend(result)
+        num_data += len(boxes_info)
         self.length = num_data
+
         for i, box_info in enumerate(boxes_info):
             self.look_up_table[i] = box_info
 
