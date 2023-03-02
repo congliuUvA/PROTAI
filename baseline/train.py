@@ -182,12 +182,6 @@ def main(args: DictConfig):
     # transformation of the datasets
     transformation = GaussianFilter(3) if args_model.use_transform else None
 
-    val_set = VoxelsDataset(
-        hdf5_files_path=hdf5_file_path,
-        dataset_split_csv_path=dataset_split_csv_path,
-        val=True,
-        transform=transformation,
-    )
     train_set = VoxelsDataset(
         hdf5_files_path=hdf5_file_path,
         dataset_split_csv_path=dataset_split_csv_path,
@@ -196,6 +190,13 @@ def main(args: DictConfig):
         k_fold_test=False,
         transform=transformation,
         use_sampler=args_model.use_sampler
+    )
+
+    val_set = VoxelsDataset(
+        hdf5_files_path=hdf5_file_path,
+        dataset_split_csv_path=dataset_split_csv_path,
+        val=True,
+        transform=transformation,
     )
     val_dataloader = DataLoader(
         dataset=val_set,
