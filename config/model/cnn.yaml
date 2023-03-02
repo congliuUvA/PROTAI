@@ -21,13 +21,13 @@ model_ckpt_path: model_checkpoints
 # number of workers
 num_workers: 8
 # optimizer
-optimizer: SGD
+optimizer: Adam
 # base learning rate
 lr: 1e-3
 # learning rate maximum
 lr_max: 5e-3
 # learning rate min
-lr_min: 1e-5
+lr_min: 1e-4
 # learning rate cosine period
 lr_period: 1000
 # warm up step

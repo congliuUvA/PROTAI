@@ -130,6 +130,8 @@ class VoxelsDataset(Dataset):
             f.close()
             if data_idx > self.limit_th:
                 break
+    #
+    # def
 
     def gen_proportion_list(self):
         self.freq = {}
