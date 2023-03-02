@@ -10,6 +10,7 @@ import torchvision.transforms as T
 from tqdm import tqdm
 import numpy as np
 import ray
+from multiprocessing import Process, Manager
 
 
 class VoxelsDataset(Dataset):
@@ -108,29 +109,65 @@ class VoxelsDataset(Dataset):
 
         return voxel, label
 
+    # def gen_updated_csv(self):
+    #     # length accumulate list, prepared for indexing specific box in the data set.
+    #     data_idx = 0
+    #     # iterate through all files in sub set
+    #     for idx, row in enumerate(tqdm(self.dataset_csv.itertuples(), total=len(self.dataset_csv.index))):
+    #         pdb_full_id = row.full_id
+    #         chain = pdb_full_id.split("_")[-1]
+    #         pdb_id = row.id
+    #         hdf5_file = self.hdf5_files_path / f"{pdb_id}_pdb1.hdf5"
+    #         if not hdf5_file.exists():
+    #             continue
+    #         f = h5py.File(hdf5_file, "r")
+    #         if chain not in list(f.keys()):
+    #             continue
+    #         # each box count as one data sample
+    #         for box_idx in f[chain]:
+    #             label = "" if not self.use_sampler else f[chain][box_idx].attrs["residue_name"]
+    #             self.look_up_table[data_idx] = str(hdf5_file) + "$" + str(chain) + "$" + box_idx + "$" + label
+    #             data_idx += 1
+    #         self.length += f[chain].attrs["num_boxes"]
+    #         f.close()
+    #         if data_idx > self.limit_th:
+    #             break
+
     def gen_updated_csv(self):
         # length accumulate list, prepared for indexing specific box in the data set.
-        data_idx = 0
-        # iterate through all files in sub set
-        for idx, row in enumerate(tqdm(self.dataset_csv.itertuples(), total=len(self.dataset_csv.index))):
-            pdb_full_id = row.full_id
-            chain = pdb_full_id.split("_")[-1]
-            pdb_id = row.id
-            hdf5_file = self.hdf5_files_path / f"{pdb_id}_pdb1.hdf5"
-            if not hdf5_file.exists():
-                continue
+        with Manager() as manager:
+            boxes_info = manager.list()
+            process_list = []
+            # iterate through all files in sub set
+            for idx, row in enumerate(tqdm(self.dataset_csv.itertuples(), total=len(self.dataset_csv.index))):
+                p = Process(target=self.get_look_up_table, args=(self, row, boxes_info))
+                p.start()
+                process_list.append(p)
+                if idx > self.limit_th:
+                    break
+
+            for result in process_list:
+                result.join()
+
+            self.length = len(boxes_info)
+
+            for i, box_info in enumerate(boxes_info):
+                self.look_up_table[i] = box_info
+
+    @ray.remote
+    def get_look_up_table(self, row, boxes_info):
+        pdb_full_id = row.full_id
+        chain = pdb_full_id.split("_")[-1]
+        pdb_id = row.id
+        hdf5_file = self.hdf5_files_path / f"{pdb_id}_pdb1.hdf5"
+        if hdf5_file.exists():
             f = h5py.File(hdf5_file, "r")
-            if chain not in list(f.keys()):
-                continue
-            # each box count as one data sample
-            for box_idx in f[chain]:
-                label = "" if not self.use_sampler else f[chain][box_idx].attrs["residue_name"]
-                self.look_up_table[data_idx] = str(hdf5_file) + "$" + str(chain) + "$" + box_idx + "$" + label
-                data_idx += 1
-            self.length += f[chain].attrs["num_boxes"]
+            if chain in list(f.keys()):
+                # each box count as one data sample
+                for box_idx in f[chain]:
+                    label = "" if not self.use_sampler else f[chain][box_idx].attrs["residue_name"]
+                    boxes_info.append(str(hdf5_file) + "$" + str(chain) + "$" + box_idx + "$" + label)
             f.close()
-            if data_idx > self.limit_th:
-                break
 
     def gen_proportion_list(self):
         self.freq = {}
