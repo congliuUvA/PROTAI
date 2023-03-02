@@ -2,6 +2,7 @@
 
 #SBATCH --job-name=train
 #SBATCH --tasks=1
+#SBATCH --nodes=2
 #SBATCH --cpus-per-task=46
 #SBATCH --gres=gpu:8
 #SBATCH --mem=120G
