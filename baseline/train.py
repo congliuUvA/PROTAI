@@ -188,7 +188,6 @@ def main(args: DictConfig):
         val=True,
         transform=transformation,
     )
-    print(len(val_set))
     val_dataloader = DataLoader(
         dataset=val_set,
         batch_size=4096,
@@ -226,6 +225,7 @@ def main(args: DictConfig):
             transform=transformation,
             use_sampler=args_model.use_sampler
         )
+        print(len(train_set), len(train_set.proportion_list))
         sampler = None
         if args_model.use_sampler:
             weighted_sampler = WeightedRandomSampler(
