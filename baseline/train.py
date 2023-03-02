@@ -225,20 +225,14 @@ def main(args: DictConfig):
             transform=transformation,
             use_sampler=args_model.use_sampler
         )
-        # print(len(train_set), len(train_set.proportion_list))
         if args_model.use_sampler:
             weighted_sampler = WeightedRandomSampler(
                 weights=train_set.proportion_list,
                 num_samples=int(train_set.length),
                 replacement=False,
             )
-            sampler = BatchSampler(
-                sampler=weighted_sampler,
-                batch_size=args_model.batch_size,
-                drop_last=False
-            )
             train_dataloader = DataLoader(
-                sampler=sampler,
+                sampler=weighted_sampler,
                 dataset=train_set,
                 batch_size=args_model.batch_size,
                 num_workers=args_model.num_workers,
