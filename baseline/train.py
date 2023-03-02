@@ -230,8 +230,8 @@ def main(args: DictConfig):
         if args_model.use_sampler:
             weighted_sampler = WeightedRandomSampler(
                 weights=train_set.proportion_list,
-                num_samples=train_set.length,
-                replacement=True,
+                num_samples=int(train_set.length),
+                replacement=False,
             )
             sampler = BatchSampler(
                 sampler=weighted_sampler,
