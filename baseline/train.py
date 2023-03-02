@@ -182,19 +182,19 @@ def main(args: DictConfig):
     # transformation of the datasets
     transformation = GaussianFilter(3) if args_model.use_transform else None
 
-    # val_set = VoxelsDataset(
-    #     hdf5_files_path=hdf5_file_path,
-    #     dataset_split_csv_path=dataset_split_csv_path,
-    #     val=True,
-    #     transform=transformation,
-    # )
-    # val_dataloader = DataLoader(
-    #     dataset=val_set,
-    #     batch_size=4096,
-    #     shuffle=False,
-    #     num_workers=args_model.num_workers,
-    #     pin_memory=True,
-    # )
+    val_set = VoxelsDataset(
+        hdf5_files_path=hdf5_file_path,
+        dataset_split_csv_path=dataset_split_csv_path,
+        val=True,
+        transform=transformation,
+    )
+    val_dataloader = DataLoader(
+        dataset=val_set,
+        batch_size=4096,
+        shuffle=False,
+        num_workers=args_model.num_workers,
+        pin_memory=True,
+    )
 
     loss_func = nn.CrossEntropyLoss()
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')

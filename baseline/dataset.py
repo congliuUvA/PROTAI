@@ -108,76 +108,29 @@ class VoxelsDataset(Dataset):
 
         return voxel, label
 
-    # def gen_updated_csv(self):
-    #     # length accumulate list, prepared for indexing specific box in the data set.
-    #     data_idx = 0
-    #     # iterate through all files in sub set
-    #     for idx, row in enumerate(tqdm(self.dataset_csv.itertuples(), total=len(self.dataset_csv.index))):
-    #         pdb_full_id = row.full_id
-    #         chain = pdb_full_id.split("_")[-1]
-    #         pdb_id = row.id
-    #         hdf5_file = self.hdf5_files_path / f"{pdb_id}_pdb1.hdf5"
-    #         if not hdf5_file.exists():
-    #             continue
-    #         f = h5py.File(hdf5_file, "r")
-    #         if chain not in list(f.keys()):
-    #             continue
-    #         # each box count as one data sample
-    #         for box_idx in f[chain]:
-    #             label = "" if not self.use_sampler else f[chain][box_idx].attrs["residue_name"]
-    #             self.look_up_table[data_idx] = str(hdf5_file) + "$" + str(chain) + "$" + box_idx + "$" + label
-    #             data_idx += 1
-    #         self.length += f[chain].attrs["num_boxes"]
-    #         f.close()
-    #         if data_idx > self.limit_th:
-    #             break
-
     def gen_updated_csv(self):
         # length accumulate list, prepared for indexing specific box in the data set.
-        tasks = []
-        num_data = 0
-        boxes_info = []
+        data_idx = 0
         # iterate through all files in sub set
         for idx, row in enumerate(tqdm(self.dataset_csv.itertuples(), total=len(self.dataset_csv.index))):
-            tasks.append(self.get_look_up_table.remote(self, row))
-            # if idx % 10000 == 9999:
-            #     results = ray.get(tasks)
-            #     tasks = []
-            #     for result in results:
-            #         boxes_info.extend(result)
-            #     num_data += len(boxes_info)
-            #     if num_data > self.limit_th:
-            #         break
-        results = ray.get(tasks)
-        for result in results:
-            boxes_info.extend(result)
-        num_data += len(boxes_info)
-        self.length = num_data
-
-        for i, box_info in enumerate(boxes_info):
-            self.look_up_table[i] = box_info
-
-    @ray.remote
-    def get_look_up_table(self, row):
-        info = []
-        pdb_full_id = row.full_id
-        chain = pdb_full_id.split("_")[-1]
-        pdb_id = row.id
-        hdf5_file = self.hdf5_files_path / f"{pdb_id}_pdb1.hdf5"
-        if not hdf5_file.exists():
-            return info
-        f = h5py.File(hdf5_file, "r")
-        if chain not in list(f.keys()):
+            pdb_full_id = row.full_id
+            chain = pdb_full_id.split("_")[-1]
+            pdb_id = row.id
+            hdf5_file = self.hdf5_files_path / f"{pdb_id}_pdb1.hdf5"
+            if not hdf5_file.exists():
+                continue
+            f = h5py.File(hdf5_file, "r")
+            if chain not in list(f.keys()):
+                continue
+            # each box count as one data sample
+            for box_idx in f[chain]:
+                label = "" if not self.use_sampler else f[chain][box_idx].attrs["residue_name"]
+                self.look_up_table[data_idx] = str(hdf5_file) + "$" + str(chain) + "$" + box_idx + "$" + label
+                data_idx += 1
+            self.length += f[chain].attrs["num_boxes"]
             f.close()
-            return info
-        # each box count as one data sample
-        for box_idx in f[chain]:
-            label = "" if not self.use_sampler else f[chain][box_idx].attrs["residue_name"]
-            info.append(str(hdf5_file) + "$" + str(chain) + "$" + box_idx + "$" + label)
-
-        f.close()
-        return info
-
+            if data_idx > self.limit_th:
+                break
 
     def gen_proportion_list(self):
         self.freq = {}
