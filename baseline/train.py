@@ -225,8 +225,7 @@ def main(args: DictConfig):
             transform=transformation,
             use_sampler=args_model.use_sampler
         )
-        print(len(train_set), len(train_set.proportion_list))
-        sampler = None
+        # print(len(train_set), len(train_set.proportion_list))
         if args_model.use_sampler:
             weighted_sampler = WeightedRandomSampler(
                 weights=train_set.proportion_list,
