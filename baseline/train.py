@@ -157,7 +157,7 @@ def get_optimizer(args_model, model):
                   (1.0 + math.cos(
                       (cur_iter - args_model.warm_up_step) / (args_model.lr_period - args_model.warm_up_step) * math.pi)
                    )
-                  ) / args_model.lr
+                  ) / args_model.lr_max
         lr_scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lr_func)
 
     if args_model.optimizer == "SGD":
