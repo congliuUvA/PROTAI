@@ -238,14 +238,21 @@ def main(args: DictConfig):
                 batch_size=args_model.batch_size,
                 drop_last=False
             )
-        train_dataloader = DataLoader(
-            sampler=sampler,
-            dataset=train_set,
-            batch_size=args_model.batch_size,
-            shuffle=True if args_model.use_sampler else None,
-            num_workers=args_model.num_workers,
-            pin_memory=True,
-        )
+            train_dataloader = DataLoader(
+                sampler=sampler,
+                dataset=train_set,
+                batch_size=args_model.batch_size,
+                num_workers=args_model.num_workers,
+                pin_memory=True,
+            )
+        else:
+            train_dataloader = DataLoader(
+                dataset=train_set,
+                batch_size=args_model.batch_size,
+                shuffle=True,
+                num_workers=args_model.num_workers,
+                pin_memory=True,
+            )
 
         best_ckpt_path, best_val_acc = training(
             args_model, model, fold_idx, args_model.epochs, train_dataloader,
