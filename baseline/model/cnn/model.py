@@ -69,10 +69,7 @@ class Block(nn.Module):
         )
 
     def forward(self, x):
-        print(x.shape)
         out = self.left(x)
-        print("leftout", out.shape)
-        print("shortcut", self.shortcut(x).shape)
         out = out + self.shortcut(x)
         out = nn.ReLU()(out)
 
