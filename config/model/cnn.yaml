@@ -5,7 +5,7 @@ use_sampler: True
 # number of folds in training set.
 folds: 5
 # model name
-model_name: CNN
+model_name: ResNet
 # batch size
 batch_size: 1024
 # number of epochs need to be run
@@ -21,7 +21,7 @@ model_ckpt_path: model_checkpoints
 # number of workers
 num_workers: 8
 # optimizer
-optimizer: Adam
+optimizer: SGD
 # base learning rate
 lr: 1e-3
 # learning rate maximum

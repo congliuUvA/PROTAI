@@ -6,7 +6,7 @@ import wandb
 from dataset import VoxelsDataset, GaussianFilter
 from pathlib import Path
 from torch.utils.data import DataLoader, WeightedRandomSampler, BatchSampler
-from model.cnn.model import CNN
+from model.cnn.model import CNN, ResNet3D, Block
 import torch.nn as nn
 from utils.log import get_logger
 from omegaconf import DictConfig, OmegaConf
@@ -198,7 +198,10 @@ def main(args: DictConfig):
 
     loss_func = nn.CrossEntropyLoss()
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = CNN(args_model.num_classes, args_model.num_channels, args_model.drop_out)
+    if args_model.model_name == "CNN":
+        model = CNN(args_model.num_classes, args_model.num_channels, args_model.drop_out)
+    if args_model.model_name == "ResNet":
+        model = ResNet3D(Block, [1, 1, 1, 1])
     model = nn.DataParallel(model)
     model = model.to(device)
     if args_model.ckpt_path != "":
