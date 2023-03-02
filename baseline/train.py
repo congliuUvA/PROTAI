@@ -188,6 +188,15 @@ def main(args: DictConfig):
         val=True,
         transform=transformation,
     )
+    train_set = VoxelsDataset(
+        hdf5_files_path=hdf5_file_path,
+        dataset_split_csv_path=dataset_split_csv_path,
+        training=True,
+        fold="all",
+        k_fold_test=False,
+        transform=transformation,
+        use_sampler=args_model.use_sampler
+    )
     val_dataloader = DataLoader(
         dataset=val_set,
         batch_size=4096,
