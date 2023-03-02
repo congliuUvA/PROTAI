@@ -182,26 +182,26 @@ def main(args: DictConfig):
     # transformation of the datasets
     transformation = GaussianFilter(3) if args_model.use_transform else None
 
-    val_set = VoxelsDataset(
-        hdf5_files_path=hdf5_file_path,
-        dataset_split_csv_path=dataset_split_csv_path,
-        val=True,
-        transform=transformation,
-    )
-    val_dataloader = DataLoader(
-        dataset=val_set,
-        batch_size=4096,
-        shuffle=False,
-        num_workers=args_model.num_workers,
-        pin_memory=True,
-    )
+    # val_set = VoxelsDataset(
+    #     hdf5_files_path=hdf5_file_path,
+    #     dataset_split_csv_path=dataset_split_csv_path,
+    #     val=True,
+    #     transform=transformation,
+    # )
+    # val_dataloader = DataLoader(
+    #     dataset=val_set,
+    #     batch_size=4096,
+    #     shuffle=False,
+    #     num_workers=args_model.num_workers,
+    #     pin_memory=True,
+    # )
 
     loss_func = nn.CrossEntropyLoss()
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = CNN(args_model.num_classes, args_model.num_channels, args_model.drop_out)
     model = nn.DataParallel(model)
     model = model.to(device)
-    if args_model.ckpt_path is not "":
+    if args_model.ckpt_path != "":
         model_path = parent_path / "model_checkpoints" / args_model.ckpt_path
         state_dict = torch.load(model_path)
         model.load_state_dict(state_dict["state_dict"])
