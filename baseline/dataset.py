@@ -94,6 +94,7 @@ class VoxelsDataset(Dataset):
         Returns:
             Loaded data and its label
         """
+        print(idx)
         # given one specific data instance idx, find the corresponding position in
         # accumulated length list, the idx + 1 represents the index of the row in the csv file
         info = self.look_up_table[idx]
