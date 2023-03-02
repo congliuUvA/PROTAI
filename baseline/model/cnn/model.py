@@ -1,7 +1,7 @@
 """3D CNN model for voxel boxes."""
 from torch import nn, tensor
-from torchsummary import summary
-import torch
+
+
 class CNN(nn.Module):
     def __init__(self, num_classes: int, in_channels: int, drop_out: float):
         """Initialization.
