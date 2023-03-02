@@ -242,7 +242,7 @@ def main(args: DictConfig):
             sampler=sampler,
             dataset=train_set,
             batch_size=args_model.batch_size,
-            shuffle=True,
+            shuffle=True if args_model.use_sampler else None,
             num_workers=args_model.num_workers,
             pin_memory=True,
         )
