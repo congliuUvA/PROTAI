@@ -70,7 +70,7 @@ class VoxelsDataset(Dataset):
         self.look_up_table = {}
         # shuffle the data set to make sure the distribution is somewhat similar
         self.updated_csv = self.dataset_csv.copy().sample(frac=1).reset_index()
-        self.limit_th = 10
+        self.limit_th = 10000
         self.gen_updated_csv()
         # if dataset is used for training, generate weight list for each of the instance,
         # WeightedSampler will sample instances based on their weights, thus yielding batches with similar distribution.
