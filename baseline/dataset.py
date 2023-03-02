@@ -140,7 +140,7 @@ class VoxelsDataset(Dataset):
             process_list = []
             # iterate through all files in sub set
             for idx, row in enumerate(tqdm(self.dataset_csv.itertuples(), total=len(self.dataset_csv.index))):
-                p = Process(target=self.get_look_up_table, args=(self, row, boxes_info))
+                p = Process(target=self.get_look_up_table, args=(row, boxes_info))
                 p.start()
                 process_list.append(p)
                 if idx > self.limit_th:
