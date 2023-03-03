@@ -72,7 +72,7 @@ def main(args):
 
     test_dataloader = DataLoader(
         dataset=test_set,
-        batch_size=4096,
+        batch_size=6000,
         shuffle=False,
     )
 
