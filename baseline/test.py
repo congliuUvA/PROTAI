@@ -75,5 +75,7 @@ def main(args):
     logger.info(f"Accuracy on test set is {accuracy:.3f}.")
 
 
-
+if __name__ == "__main__":
+    logger.info("Start testing!")
+    main()
 
