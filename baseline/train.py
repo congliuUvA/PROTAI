@@ -50,9 +50,9 @@ def training(
             acc_train_step = (preds_int == labels_int).sum() / preds.shape[0]
             acc_train += acc_train_step
             progress_bar.set_postfix(acc=f'{acc_train / (idx + 1):.3f}')
-            wandb_run.log({"loss_train": loss_train, "train_axes": train_log_idx})
-            wandb_run.log({"acc_train": acc_train / (idx + 1), "train_axes": train_log_idx})
-            wandb_run.log({"learning_rate": optimizer.param_groups[0]['lr'], "train_axes": train_log_idx})
+            wandb_run.log({"loss_train": loss_train, "train_axis": train_log_idx})
+            wandb_run.log({"acc_train": acc_train / (idx + 1), "train_axis": train_log_idx})
+            wandb_run.log({"learning_rate": optimizer.param_groups[0]['lr'], "train_axis": train_log_idx})
             train_log_idx += 1
 
         model.eval()
@@ -67,7 +67,7 @@ def training(
             acc_val_step = (preds_int == labels_int).sum() / preds.shape[0]
             acc_val += acc_val_step
             progress_bar.set_postfix(acc=f'{acc_val / (idx + 1):.3f}')
-            wandb_run.log({"acc_val": acc_val / (idx + 1), "val_axes": val_log_idx})
+            wandb_run.log({"acc_val": acc_val / (idx + 1), "val_axis": val_log_idx})
             val_log_idx += 1
         best_acc_val, best_ckpt_path = update_best_checkpoint(
             acc_val / (idx + 1), best_acc_val, best_ckpt_path,
@@ -76,7 +76,7 @@ def training(
         )
 
         # regularly save model once one epoch is finished.
-        model_save_path = checkpoint_dir / f"{fold}_CNN_{epoch}.pt"
+        model_save_path = checkpoint_dir / f"{fold}_{args_model.model_name}_{epoch}.pt"
         save_checkpoint(model, optimizer, lr_scheduler, str(model_save_path), epoch)
 
     return best_ckpt_path, best_acc_val
@@ -205,7 +205,7 @@ def main(args: DictConfig):
     model = nn.DataParallel(model)
     model = model.to(device)
     if args_model.ckpt_path != "":
-        model_path = parent_path / "model_checkpoints" / args_model.ckpt_path
+        model_path = parent_path / args_model.model_ckpt_path / args_model.best_model_ckpt_path
         state_dict = torch.load(model_path)
         model.load_state_dict(state_dict["state_dict"])
 

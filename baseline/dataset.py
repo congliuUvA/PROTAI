@@ -25,6 +25,7 @@ class VoxelsDataset(Dataset):
             k_fold_test: bool = False,
             transform=None,
             use_sampler: bool = False,
+            limit_th: int = 8e6,
     ):
         """Init.
 
@@ -70,7 +71,7 @@ class VoxelsDataset(Dataset):
         self.look_up_table = {}
         # shuffle the data set to make sure the distribution is somewhat similar
         self.updated_csv = self.dataset_csv.copy().sample(frac=1).reset_index()
-        self.limit_th = 8000000
+        self.limit_th = limit_th
         self.gen_updated_csv()
         # if dataset is used for training, generate weight list for each of the instance,
         # WeightedSampler will sample instances based on their weights, thus yielding batches with similar distribution.
