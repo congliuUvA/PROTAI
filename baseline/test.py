@@ -30,8 +30,8 @@ def test(ckpt_path: Path, test_dataloader: DataLoader, device):
         progress_bar = tqdm(test_dataloader)
         for idx, data_test in enumerate(progress_bar):
             voxel_boxes, labels = data_test
-            voxels_data, labels = voxels_data.to(device), labels.to(device)
-            preds = model(voxels_data)
+            voxel_boxes, labels = voxel_boxes.to(device), labels.to(device)
+            preds = model(voxel_boxes)
             labels_int = torch.where(labels == 1)[-1].cpu()
             preds_int = torch.max(preds.detach(), dim=1)[-1].cpu()
             acc_test_step = (preds_int == labels_int).sum() / preds.shape[0]
