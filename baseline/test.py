@@ -25,13 +25,19 @@ def test(ckpt_path: Path, test_dataloader: DataLoader, device):
     # test
     num_instance = 0
     correct = 0
+    acc_test = 0
     with torch.no_grad():
-        for voxels_data, labels in tqdm(test_dataloader):
+        progress_bar = tqdm(test_dataloader)
+        for idx, data_test in enumerate(progress_bar):
+            voxel_boxes, labels = data_test
             voxels_data, labels = voxels_data.to(device), labels.to(device)
             preds = model(voxels_data)
             labels_int = torch.where(labels == 1)[-1].cpu()
             preds_int = torch.max(preds.detach(), dim=1)[-1].cpu()
+            acc_test_step = (preds_int == labels_int).sum() / preds.shape[0]
+            acc_test += acc_test_step
             correct += (preds_int == labels_int).sum()
+            progress_bar.set_postfix(acc=f'{acc_test / (idx + 1):.3f}')
             num_instance += preds.shape[0]
     return correct / num_instance
 

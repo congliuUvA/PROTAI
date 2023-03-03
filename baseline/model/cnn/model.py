@@ -1,6 +1,6 @@
 """3D CNN model for voxel boxes."""
 from torch import nn, tensor
-
+from torchsummary import summary
 
 class CNN(nn.Module):
     def __init__(self, num_classes: int, in_channels: int, drop_out: float):
@@ -118,3 +118,8 @@ class ResNet3D(nn.Module):
         out = out.view(out.size(0), -1)
         out = self.fc(out)
         return out
+
+
+if __name__ == "__main__":
+    model = ResNet3D(block=Block, layers=[1, 1, 1, 1])
+    print(summary(model, (4, 20, 20, 20)))
