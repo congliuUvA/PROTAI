@@ -45,7 +45,7 @@ def main(args):
 
     cur_path = Path().cwd()
     parent_path = cur_path.parent
-    hdf5_file_path = Path("/hddstore/cliu3") / args_data.hdf5_file_dir
+    hdf5_file_path = Path("/ssdstore/cliu3") / args_data.hdf5_file_dir
     dataset_split_csv_path = parent_path / args_data.dataset_split_csv
     model_ckpt_dir = cur_path / args_model.model_ckpt_path
 
