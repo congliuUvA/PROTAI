@@ -7,7 +7,7 @@ from tqdm import tqdm
 from typing import List, Tuple
 from Bio.PDB.NeighborSearch import NeighborSearch
 from itertools import product
-from Bio.PDB.vectors import Vector, rotmat
+from Bio.PDB.vectors import Vector, rotmat, rotaxis2m
 from pathlib import Path
 from voxel_rotate_atom import gen_ca_cb_vectors, visualize_voxels, cal_sasa
 import freesasa
@@ -17,13 +17,15 @@ num_of_voxels = 20
 len_of_voxel = 0.8
 
 
-def generate_vertices(central_coord: np.array, rot: np.array) -> np.array:
+def generate_vertices(central_coord: np.array, rot: np.array, n_coord, ca_cb_vector,) -> np.array:
     """This function generates rotated coordinates of vertices of box
         according to the coordinate of the central position.
 
     Args:
         central_coord: coordinate of the central position of the box.
         rot: rotation matrix that rotation corner vector to ca_cb direction.
+        n_coord: coordinates of atom N.
+        ca_cb_vector: ca_cb vector.
 
     Returns:
         vetices_coords: coordinates of 8 vertices.
@@ -34,6 +36,21 @@ def generate_vertices(central_coord: np.array, rot: np.array) -> np.array:
     vertices_centre_vector = vertices_coords - central_coord
     # vector addition, (8, 3)
     vertices_coords = (vertices_centre_vector@rot.T) + central_coord
+    # make sure each orientation is the same.
+    left_up_corner = vertices_coords[3]
+    vector_cblc = left_up_corner - central_coord
+    vector_cbn = n_coord - central_coord
+    oro_vector_cacbn_plane = np.cross(vector_cbn, ca_cb_vector.get_array())
+    oro_vector_lccacb_plane = np.cross(ca_cb_vector.get_array(), vector_cblc)
+    angle_between_plane = (oro_vector_cacbn_plane @ oro_vector_lccacb_plane) / \
+                          (np.linalg.norm(oro_vector_cacbn_plane) * np.linalg.norm(oro_vector_lccacb_plane))
+    angle = np.arccos(round(angle_between_plane, 6)) * 180 / np.pi
+    clock_wise = ca_cb_vector.get_array() @ np.cross(oro_vector_cacbn_plane, oro_vector_lccacb_plane) > 0
+    rot_angle = 180 + angle if not clock_wise else 180 - angle
+    rot_further = rotaxis2m(rot_angle / 180 * np.pi, ca_cb_vector)
+    vertices_centre_vector = vertices_coords - central_coord
+    vertices_coords = (vertices_centre_vector @ rot_further.T) + central_coord
+
     return vertices_coords
 
 
@@ -61,7 +78,7 @@ def is_in_range(vertices_coords: np.array, atom: Bio.PDB.Atom.Atom, center_coord
 
 
 def select_in_range_atoms(
-        struct, ca_list, cb_list, ca_cb_vectors,
+        struct, ca_list, cb_list, ca_cb_vectors, n_coords,
         selected_central_atom_type="CA", shift=0
 ) -> Tuple[List, List, np.array]:
     """This function generates the selected in-range atom corresponding to the central atom ["CA", "CB"].
@@ -71,6 +88,7 @@ def select_in_range_atoms(
         ca_list: list containing CA in the PDB file.
         cb_list: list containing CB in the PDB file.
         ca_cb_vectors: list containing ca-cb vectors.
+        n_coords: coordinates of Nitrogen.
         selected_central_atom_type: string stating which central atom is selected.
         shift: shift of carbon alpha along the diagonal direction.
 
@@ -96,9 +114,10 @@ def select_in_range_atoms(
 
     # record central atom coordinates
     central_atom_coords = []
-
     # searching for atoms that are within the range
-    for central_atom, ca_cb_vector in tqdm(zip(central_atom_list, ca_cb_vectors), total=len(ca_cb_vectors)):
+    for central_atom, ca_cb_vector, n_coord in tqdm(
+            zip(central_atom_list, ca_cb_vectors, n_coords), total=len(ca_cb_vectors)
+    ):
         # the first atom in the voxel is the central atom.
         voxel_atom_list = [central_atom]
 
@@ -110,7 +129,7 @@ def select_in_range_atoms(
         central_atom_coord = central_atom.get_coord() - shift * ca_cb_vector.normalized().get_array()
 
         # generate eight rotated box vertices, (8, 3)
-        vertices_coord = generate_vertices(central_atom_coord, rot)
+        vertices_coord = generate_vertices(central_atom_coord, rot, n_coord, ca_cb_vector)
 
         # search in-sphere atoms
         # It doesn't matter if not transferring atom coordinate here because sphere is invariant.
@@ -149,9 +168,9 @@ def generate_voxel_atom_lists(struct: Bio.PDB.Structure.Structure) -> Tuple[List
         central_atom_coords: list of central atom coordinate after applying shift.
         vertices_coords: ndarray of 8 vertices coordinates of voxels. (num_of_res, (8, 3))
     """
-    ca_list, cb_list, ca_cb_vectors, boxes_counter = gen_ca_cb_vectors(struct)
+    ca_list, cb_list, ca_cb_vectors, boxes_counter, n_coords = gen_ca_cb_vectors(struct)
     voxel_atom_lists, central_atom_coords, vertices_coords = select_in_range_atoms(
-        struct, ca_list, cb_list, ca_cb_vectors, selected_central_atom_type="CB", shift=0
+        struct, ca_list, cb_list, ca_cb_vectors, n_coords, selected_central_atom_type="CB", shift=0
     )
     return voxel_atom_lists, central_atom_coords, vertices_coords
 
