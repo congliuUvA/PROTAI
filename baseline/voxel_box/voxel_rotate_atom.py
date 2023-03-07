@@ -52,7 +52,6 @@ def load_protein(arguments, pdb_name: str, file_path: str) -> Bio.PDB.Structure.
         )
 
     struct = PDB_parser.get_structure(pdb_name, file_path)
-    print(struct)
     struct_pqr = PQR_parser.get_structure(pdb_name + "_pqr", pqr_file_path) if pqr_file_path else None
 
     # remove hetero residues from struct
@@ -266,7 +265,6 @@ def generate_voxel_atom_lists(struct: Bio.PDB.Structure.Structure) -> Tuple[List
     Args:
         struct: structure in biopython.
     """
-    print(struct)
     ca_list, cb_list, ca_cb_vectors, boxes_counter, n_coords = gen_ca_cb_vectors(struct)
     voxel_atom_lists, rot_mats, central_atom_coords = select_in_range_atoms(
         struct, ca_list, cb_list, ca_cb_vectors, n_coords, selected_central_atom_type="CB", shift=0
@@ -569,7 +567,7 @@ def gen_voxel_box_file(arguments, idx):
     pdb_path = arguments.pdb_path
     pdb_id = arguments.pdb_id
 
-    print(f"Dealing with file index: {idx}, {str(Path(arguments.hdf5_file_dir) / pdb_id) + '.hdf5'}")
+    # print(f"Dealing with file index: {idx}, {str(Path(arguments.hdf5_file_dir) / pdb_id) + '.hdf5'}")
 
     # Load protein structure
     struct, struct_pqr = load_protein(arguments, pdb_name, pdb_path)
@@ -579,7 +577,7 @@ def gen_voxel_box_file(arguments, idx):
     (
         voxel_atom_lists, rot_mats, central_atom_coords, boxes_counter
     ) = generate_voxel_atom_lists(struct)  # (num_ca, num_atoms_in_voxel)
-
+    print(1111111111111111)
     gen_voxel_binary_array(arguments, f, struct, struct_pqr, pdb_name,
                            voxel_atom_lists, rot_mats, central_atom_coords, boxes_counter)
     f.close()
