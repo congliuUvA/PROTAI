@@ -7,10 +7,10 @@ raw_pdb_dir: pdb_raw_files
 dataset_split_csv: dataset_split_v1_0_0.csv
 
 # use cluster
-use_hddstore: True
+use_hddstore: False
 
 # hdf5 file dir path
-hdf5_file_dir: voxels_hdf5
+hdf5_file_dir: voxels_hdf5_new
 
 # smaller hdf5 file dir path
 smaller_hdf5_file_dir: smaller_voxels_hdf5
