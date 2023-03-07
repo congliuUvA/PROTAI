@@ -57,10 +57,13 @@ def data_gen(args: DictConfig):
 
     idx, total = 0, gz_file_list.shape[0]
 
-    start_end_idx = [int(i * total / args_data.num_partition) for i in range(args_data.num_partition + 1)]
-    if not hasattr(args_data, "partition_idx"):
-        logger.debug("Please specify the partition index in command line!")
-    start, end = start_end_idx[args_data.partition_idx - 1], start_end_idx[args_data.partition_idx]
+    if args_data.num_partition != 1:
+        start_end_idx = [int(i * total / args_data.num_partition) for i in range(args_data.num_partition + 1)]
+        if not hasattr(args_data, "partition_idx"):
+            logger.debug("Please specify the partition index in command line!")
+        start, end = start_end_idx[args_data.partition_idx - 1], start_end_idx[args_data.partition_idx]
+    else:
+        start, end = 0, total
 
     # ray tasks
     logger.info("Start ray tasks.")
