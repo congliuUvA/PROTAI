@@ -28,8 +28,8 @@ RES_NAME = ["ALA", "ARG", "ASN", "ASP", "CYS",
             "LEU", "LYS", "MET", "PHE", "PRO",
             "SER", "THR", "TRP", "TYR", "VAL"]
 
-PDB_parser = PDBParser(QUIET=0)
-PQR_parser = PDBParser(QUIET=0, is_pqr=True)
+PDB_parser = PDBParser(QUIET=1)
+PQR_parser = PDBParser(QUIET=1, is_pqr=True)
 CIF_parser = MMCIFParser(QUIET=1)
 
 
@@ -52,6 +52,7 @@ def load_protein(arguments, pdb_name: str, file_path: str) -> Bio.PDB.Structure.
         )
 
     struct = PDB_parser.get_structure(pdb_name, file_path)
+    print(struct)
     struct_pqr = PQR_parser.get_structure(pdb_name + "_pqr", pqr_file_path) if pqr_file_path else None
 
     # remove hetero residues from struct
