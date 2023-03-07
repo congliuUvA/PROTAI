@@ -45,6 +45,7 @@ def load_protein(arguments, pdb_name: str, file_path: str) -> Bio.PDB.Structure.
         struct: Structure of the selected protein in Biopython.
     """
     pqr_file_path = None
+    skip = False
     if arguments.add_partial_charges:
         pqr_file_path = str(Path(file_path).parent.joinpath(arguments.pdb_id)) + ".pqr"
         os.system(
@@ -67,7 +68,22 @@ def load_protein(arguments, pdb_name: str, file_path: str) -> Bio.PDB.Structure.
     for atom in struct.get_atoms():
         atom.set_serial_number(idx)
 
-    return struct, struct_pqr
+    # check whether generated pqr is consistent with pdb
+    elements_list = ["C", "N", "O", "S"]
+    # pqr content
+    pqr_model = struct_pqr[0]
+    for atom in struct.get_atoms():
+        if atom.element not in elements_list:
+            continue
+        chain = atom.parent.parent
+        res_full_id = atom.parent.get_id()
+        atom_name = atom.name
+        try:
+            radii = pqr_model[chain.id][res_full_id][atom_name].radius
+        except KeyError:
+            skip = True
+
+    return struct, struct_pqr, skip
 
 
 def range_editor(coord: ndarray) -> List:
@@ -573,16 +589,17 @@ def gen_voxel_box_file(arguments, idx):
     print(f"Dealing with file index: {idx}, {str(Path(arguments.hdf5_file_dir) / pdb_id) + '.hdf5'}")
 
     # Load protein structure
-    struct, struct_pqr = load_protein(arguments, pdb_name, pdb_path)
+    struct, struct_pqr, skip = load_protein(arguments, pdb_name, pdb_path)
 
-    # start a hdf5 file
-    f = h5py.File(str(Path(arguments.hdf5_file_dir) / pdb_id) + ".hdf5", "w", track_order=True)
-    (
-        voxel_atom_lists, rot_mats, central_atom_coords, boxes_counter
-    ) = generate_voxel_atom_lists(struct)  # (num_ca, num_atoms_in_voxel)
-    gen_voxel_binary_array(arguments, f, struct, struct_pqr, pdb_name,
-                           voxel_atom_lists, rot_mats, central_atom_coords, boxes_counter)
-    f.close()
+    if not skip:
+        # start a hdf5 file
+        f = h5py.File(str(Path(arguments.hdf5_file_dir) / pdb_id) + ".hdf5", "w", track_order=True)
+        (
+            voxel_atom_lists, rot_mats, central_atom_coords, boxes_counter
+        ) = generate_voxel_atom_lists(struct)  # (num_ca, num_atoms_in_voxel)
+        gen_voxel_binary_array(arguments, f, struct, struct_pqr, pdb_name,
+                               voxel_atom_lists, rot_mats, central_atom_coords, boxes_counter)
+        f.close()
 
 # @hydra.main(version_base=None, config_path="../../config/voxel_box", config_name="voxel_box")
 # def gen_voxel_box_file(arguments):
