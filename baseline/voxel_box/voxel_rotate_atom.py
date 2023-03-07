@@ -567,17 +567,16 @@ def gen_voxel_box_file(arguments, idx):
     pdb_path = arguments.pdb_path
     pdb_id = arguments.pdb_id
 
-    # print(f"Dealing with file index: {idx}, {str(Path(arguments.hdf5_file_dir) / pdb_id) + '.hdf5'}")
+    print(f"Dealing with file index: {idx}, {str(Path(arguments.hdf5_file_dir) / pdb_id) + '.hdf5'}")
 
     # Load protein structure
     struct, struct_pqr = load_protein(arguments, pdb_name, pdb_path)
 
     # start a hdf5 file
-    f = h5py.File(str(arguments.hdf5_file_dir / pdb_id) + ".hdf5", "w", track_order=True)
+    f = h5py.File(str(Path(arguments.hdf5_file_dir) / pdb_id) + ".hdf5", "w", track_order=True)
     (
         voxel_atom_lists, rot_mats, central_atom_coords, boxes_counter
     ) = generate_voxel_atom_lists(struct)  # (num_ca, num_atoms_in_voxel)
-    print(1111111111111111)
     gen_voxel_binary_array(arguments, f, struct, struct_pqr, pdb_name,
                            voxel_atom_lists, rot_mats, central_atom_coords, boxes_counter)
     f.close()
