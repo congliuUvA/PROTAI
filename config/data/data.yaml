@@ -7,7 +7,7 @@ raw_pdb_dir: pdb_raw_files
 dataset_split_csv: dataset_split_v1_0_0.csv
 
 # use cluster
-use_hddstore: False
+use_hddstore: True
 
 # hdf5 file dir path
 hdf5_file_dir: voxels_hdf5
@@ -16,10 +16,13 @@ hdf5_file_dir: voxels_hdf5
 smaller_hdf5_file_dir: smaller_voxels_hdf5
 
 # partition idx of data to generate
-partition_idx: 3
+partition_idx: 1
 
 # num of partitions of data generation
-num_partition: 4
+num_partition: 2
 
 # use gaussian transformation
 use_transform: False
+
+# proportion of pdb to generate
+proportion_pdb: 0.1
