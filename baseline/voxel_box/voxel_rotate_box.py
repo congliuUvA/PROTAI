@@ -1,5 +1,4 @@
 """This module is for voxel box generation."""
-from voxel_rotate_atom import load_protein
 import Bio
 import numpy as np
 from numpy import ndarray
@@ -8,6 +7,7 @@ from typing import List, Tuple
 from Bio.PDB.NeighborSearch import NeighborSearch
 from itertools import product
 from Bio.PDB.vectors import Vector, rotmat, rotaxis2m
+from Bio.PDB.PDBParser import PDBParser
 from pathlib import Path
 from voxel_rotate_atom import gen_ca_cb_vectors, visualize_voxels, cal_sasa
 import freesasa
@@ -17,7 +17,37 @@ num_of_voxels = 20
 len_of_voxel = 0.8
 
 
-def generate_vertices(central_coord: np.array, rot: np.array, n_coord, ca_cb_vector,) -> np.array:
+def load_protein(arguments, pdb_name: str, file_path: str) -> Bio.PDB.Structure.Structure:
+    """This function is used to load the protein file in format of mmCIF to the structure in Biopython.
+
+    Args:
+        arguments: arguments input by users.
+        pdb_name: PDB ID
+        file_path: file path of the protein file.
+
+    Returns:
+        struct: Structure of the selected protein in Biopython.
+    """
+
+    struct = PDBParser(QUIET=1).get_structure(pdb_name, file_path)
+
+    # remove hetero residues from struct
+    for model in struct.get_list():
+        for chain in model.get_list():
+            for res in chain.get_list():
+                # remove hetero residues
+                if res.get_id()[0] not in [" ", "W"]:
+                    chain.__delitem__(res.get_id())
+
+    # reset atomic serial number for getting access to sasa results
+    idx = -1
+    for atom in struct.get_atoms():
+        atom.set_serial_number(idx)
+
+    return struct
+
+
+def generate_vertices(central_coord: np.array, rot: np.array, n_coord, ca_cb_vector,):
     """This function generates rotated coordinates of vertices of box
         according to the coordinate of the central position.
 
@@ -44,10 +74,11 @@ def generate_vertices(central_coord: np.array, rot: np.array, n_coord, ca_cb_vec
     oro_vector_lccacb_plane = np.cross(ca_cb_vector.get_array(), vector_cblc)
     angle_between_plane = (oro_vector_cacbn_plane @ oro_vector_lccacb_plane) / \
                           (np.linalg.norm(oro_vector_cacbn_plane) * np.linalg.norm(oro_vector_lccacb_plane))
-    angle = np.arccos(round(angle_between_plane, 6)) * 180 / np.pi
+    # angle_between_plane = min(max(angle_between_plane, -1), 1)
+    angle = np.arccos(angle_between_plane)
     clock_wise = ca_cb_vector.get_array() @ np.cross(oro_vector_cacbn_plane, oro_vector_lccacb_plane) > 0
-    rot_angle = 180 + angle if not clock_wise else 180 - angle
-    rot_further = rotaxis2m(rot_angle / 180 * np.pi, ca_cb_vector)
+    rot_angle = 1 + angle if not clock_wise else 1 - angle
+    rot_further = rotaxis2m(rot_angle, ca_cb_vector)
     vertices_centre_vector = vertices_coords - central_coord
     vertices_coords = (vertices_centre_vector @ rot_further.T) + central_coord
 
@@ -154,7 +185,8 @@ def select_in_range_atoms(
         # save vertices coordinates for filling the atom in voxels.
         vertices_coords.append(vertices_coord)
 
-    return voxel_atom_lists, central_atom_coords, np.array(vertices_coords)
+
+    return voxel_atom_lists, central_atom_coords, np.array(vertices_coords),
 
 
 def generate_voxel_atom_lists(struct: Bio.PDB.Structure.Structure) -> Tuple[List, List, np.array]:
@@ -169,10 +201,10 @@ def generate_voxel_atom_lists(struct: Bio.PDB.Structure.Structure) -> Tuple[List
         vertices_coords: ndarray of 8 vertices coordinates of voxels. (num_of_res, (8, 3))
     """
     ca_list, cb_list, ca_cb_vectors, boxes_counter, n_coords = gen_ca_cb_vectors(struct)
-    voxel_atom_lists, central_atom_coords, vertices_coords = select_in_range_atoms(
+    voxel_atom_lists, central_atom_coords, vertices_coords, = select_in_range_atoms(
         struct, ca_list, cb_list, ca_cb_vectors, n_coords, selected_central_atom_type="CB", shift=0
     )
-    return voxel_atom_lists, central_atom_coords, vertices_coords
+    return voxel_atom_lists, central_atom_coords, vertices_coords,
 
 
 def generate_cubic_centre_coords(vertices_coord: np.array) -> np.array:
@@ -184,36 +216,30 @@ def generate_cubic_centre_coords(vertices_coord: np.array) -> np.array:
     Returns:
         sub_voxel_centre_coords: sub voxel center coordinates
     """
-    corner_vector = Vector(1, 1, 1)
-    rotated_corner_vector = Vector(vertices_coord[-1] - vertices_coord[0])
-    # define rotation matrix that rotate the corner vector back to standard xyz system
-    rot = rotmat(rotated_corner_vector, corner_vector)
-    # define the inverse rotation matrix
-    rot_inv = rotmat(corner_vector, rotated_corner_vector)
-
-    # rotate to standard xyz system
-    cartesian_vertices_coord = (vertices_coord - vertices_coord[0])@rot.T + vertices_coord[0]
-    left_down_corner_coord, right_up_corner_coord = cartesian_vertices_coord[0], cartesian_vertices_coord[-1]
-    x_split = np.linspace(left_down_corner_coord[0], right_up_corner_coord[0], num=num_of_voxels + 1)[
-              :-1] + (right_up_corner_coord[0] - left_down_corner_coord[0]) / num_of_voxels / 2
-    y_split = np.linspace(left_down_corner_coord[1], right_up_corner_coord[1], num=num_of_voxels + 1)[
-              :-1] + (right_up_corner_coord[1] - left_down_corner_coord[1]) / num_of_voxels / 2
-    z_split = np.linspace(left_down_corner_coord[2], right_up_corner_coord[2], num=num_of_voxels + 1)[
-              :-1] + (right_up_corner_coord[2] - left_down_corner_coord[2]) / num_of_voxels / 2
-    # centre coordinates of sub voxels (20, 20, 20, 3)
-    sub_voxel_centre_coords = np.array([[[[x_split[i], y_split[j], z_split[k]]
-                                          for i in range(num_of_voxels)]
-                                         for j in range(num_of_voxels)]
-                                        for k in range(num_of_voxels)])
-
-    # rotate to original angle
-    sub_voxel_centre_coords = (sub_voxel_centre_coords - vertices_coord[0])@rot_inv.T + vertices_coord[0]
+    x_vector, y_vector, z_vector = \
+        vertices_coord[1] - vertices_coord[0], \
+        vertices_coord[2] - vertices_coord[0], \
+        vertices_coord[4] - vertices_coord[0]
+    x_vector, y_vector, z_vector = \
+        x_vector / np.linalg.norm(x_vector), \
+        y_vector / np.linalg.norm(y_vector), \
+        z_vector / np.linalg.norm(z_vector)
+    sub_voxel_centre_coords = []
+    for i in range(num_of_voxels):
+        for j in range(num_of_voxels):
+            for k in range(num_of_voxels):
+                sub_centre = vertices_coord[0] + \
+                x_vector * (i * len_of_voxel + len_of_voxel / 2) + \
+                y_vector * (j * len_of_voxel + len_of_voxel / 2) + \
+                z_vector * (k * len_of_voxel + len_of_voxel / 2)
+                sub_voxel_centre_coords.append(sub_centre)
+    sub_voxel_centre_coords = np.reshape(np.array(sub_voxel_centre_coords), (20, 20, 20, 3))
     return sub_voxel_centre_coords
 
 
 def generate_selected_element_voxel(
         arguments, elements_list: List, selected_element: str, voxel_atom_list: List,
-        central_atom_coord: np.array, vertices_coord: np.array, sasa_results: freesasa.Result,
+        vertices_coord: np.array, sasa_results: freesasa.Result,
 ):
     """This function generate selected-element voxel by inserting True/False to 20*20*20 voxel.
 
@@ -222,7 +248,6 @@ def generate_selected_element_voxel(
         elements_list: elements that are in interets.
         selected_element: selected element for one single channel, "C", "N", "O", "S".
         voxel_atom_list: The pre-generated voxel list containing central CA atoms and the surrounding atoms.
-        central_atom_coord: list of central atom coordinate after applying shift.
         vertices_coord: coordinates of 8 vertices of the box for the selected residue.
         sasa_results: results of solvent accessible surface area.
     """
@@ -246,7 +271,7 @@ def generate_selected_element_voxel(
     # 4. Add atom to the voxel.
     for atom in selected_atom_list:
         voxels_bool, partial_charges, sasa = add_atom_to_voxel(
-            arguments, atom, atom.coord, sub_voxel_centre_coords, voxels_bool, partial_charges, sasa_results, sasa
+            arguments, atom, atom.coord, sub_voxel_centre_coords, voxels_bool, partial_charges, sasa_results, sasa,
         )
     return voxels_bool, partial_charges, sasa
 
@@ -323,7 +348,6 @@ def main(arguments):
             elements_list,
             element,
             voxel_atom_list,
-            central_atom_coord,
             vertices_coord,
             sasa_results
         )

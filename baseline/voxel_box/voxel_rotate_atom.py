@@ -1,4 +1,6 @@
 """This module is for voxel box generation."""
+import math
+
 import Bio
 import numpy as np
 from numpy import ndarray
@@ -26,37 +28,9 @@ RES_NAME = ["ALA", "ARG", "ASN", "ASP", "CYS",
             "LEU", "LYS", "MET", "PHE", "PRO",
             "SER", "THR", "TRP", "TYR", "VAL"]
 
-
-def pqr2pdb(fname_pqr, fname_pdb):
-
-    lines = open(fname_pqr, 'r').readlines()
-    fout = open(fname_pdb, 'w')
-
-    chain_id = ['A', 'B', 'C', 'D', 'E', 'F',
-                'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N']
-    ich = 0
-    for line in lines:
-        content = line.split()
-        if line[:6] in ['ATOM  ', 'HETATM']:
-            atnm = line[13:15].upper()
-            resName = line[17:20].upper()
-            symbol = atnm[0]
-            if atnm[:2] in ['CL', 'NA', 'MG', 'BE', 'LI', 'ZN']:
-                symbol = atnm[:2]
-            elif atnm[:2] == 'CA' and resName[:2] == 'CA':
-                symbol = 'CA'
-            sline = line[:21] + chain_id[ich] + line[22:54] + \
-                "  " + content[-2] + "  " + content[-1] + "          %2s  " % symbol
-            print(sline, file=fout)
-        elif line[:3] == 'END':
-            print('END', file=fout)
-        else:
-            print(line[:-1], file=fout)
-
-        if line[:3] == 'TER':
-            ich += 1
-
-    fout.close()
+PDB_parser = PDBParser(QUIET=1)
+PQR_parser = PDBParser(QUIET=1, is_pqr=True)
+CIF_parser = MMCIFParser(QUIET=1)
 
 
 def load_protein(arguments, pdb_name: str, file_path: str) -> Bio.PDB.Structure.Structure:
@@ -70,15 +44,30 @@ def load_protein(arguments, pdb_name: str, file_path: str) -> Bio.PDB.Structure.
     Returns:
         struct: Structure of the selected protein in Biopython.
     """
-    if arguments.addH:
-        pqr_file_path = str(Path(file_path).parent.joinpath(pdb_name)) + ".pqr"
-        os.system(f"pdb2pqr30 --ff=PARSE {file_path} {pqr_file_path}")
-        pqr2pdb(pqr_file_path, Path(file_path).stem + "_pqr.pdb")
-        file_path = Path(file_path).stem + "_pqr.pdb"
+    pqr_file_path = None
+    if arguments.add_partial_charges:
+        pqr_file_path = str(Path(file_path).parent.joinpath(arguments.pdb_id)) + ".pqr"
+        os.system(
+            f"pdb2pqr30 --ff=CHARMM --include-header --keep-chain -q --log-level ERROR {file_path} {pqr_file_path}"
+        )
 
-    parser = PDBParser(QUIET=1) if "pdb" in Path(file_path).suffix else MMCIFParser(QUIET=1)
-    struct = parser.get_structure(pdb_name, file_path)
-    return struct
+    struct = PDB_parser.get_structure(pdb_name, file_path)
+    struct_pqr = PQR_parser.get_structure(pdb_name + "_pqr", pqr_file_path) if pqr_file_path else None
+
+    # remove hetero residues from struct
+    for model in struct.get_list():
+        for chain in model.get_list():
+            for res in chain.get_list():
+                # remove hetero residues
+                if res.get_id()[0] not in [" ", "W"]:
+                    chain.__delitem__(res.get_id())
+
+    # reset atomic serial number for getting access to sasa results
+    idx = -1
+    for atom in struct.get_atoms():
+        atom.set_serial_number(idx)
+
+    return struct, struct_pqr
 
 
 def range_editor(coord: ndarray) -> List:
@@ -112,13 +101,13 @@ def cal_projected_cb_coords(c_atom, n_atom, ca_atom) -> ndarray:
     q_vector = n_atom.coord - ca_atom.coord
     u_vector = (p_vector + q_vector) / np.linalg.norm(p_vector + q_vector)
     r_vector = (p_vector - q_vector) / np.linalg.norm(p_vector - q_vector)
-    m = rotaxis2m(-2 * np.pi * 125.26 / 360, Vector(r_vector))
+    m = rotaxis2m(-2 * math.pi * 125.26 / 360, Vector(r_vector))
     b_vector = Vector(u_vector).left_multiply(m) / np.linalg.norm(Vector(u_vector).left_multiply(m))
     cb_atom_coord = b_vector.get_array() * 1.5 + ca_atom.coord
     return cb_atom_coord
 
 
-def gen_ca_cb_vectors(struct: Bio.PDB.Structure.Structure) -> Tuple[List, List, List, dict]:
+def gen_ca_cb_vectors(struct: Bio.PDB.Structure.Structure) -> Tuple[List, List, List, dict, List]:
     """ This function generates ca_list, cb_list and ca_cb vectors for all residues in one pbd file.
     Args:
         struct: structure in biopython.
@@ -130,6 +119,7 @@ def gen_ca_cb_vectors(struct: Bio.PDB.Structure.Structure) -> Tuple[List, List, 
     ca_cb_vectors = []
     ca_list, cb_list = [], []
     boxes_counter = {}
+    n_coords = []
     for res in struct.get_residues():
         # skip residue that are not AA.
         if res.get_resname() in RES_NAME:
@@ -160,15 +150,16 @@ def gen_ca_cb_vectors(struct: Bio.PDB.Structure.Structure) -> Tuple[List, List, 
                 ca_list.append(ca_atom)
                 cb_list.append(projected_cb_atom)
                 ca_cb_vectors.append(Vector(ca_atom.coord - cb_atom_coord))
+                n_coords.append(n_atom.coord)
                 if res.parent.id not in boxes_counter:
                     boxes_counter[res.parent.id] = 1
                 else:
                     boxes_counter[res.parent.id] += 1
-    return ca_list, cb_list, ca_cb_vectors, boxes_counter
+    return ca_list, cb_list, ca_cb_vectors, boxes_counter, n_coords
 
 
 def select_in_range_atoms(
-        struct, ca_list, cb_list, ca_cb_vectors,
+        struct, ca_list, cb_list, ca_cb_vectors, n_coords,
         selected_central_atom_type="CA", shift=0
 ) -> Tuple[List, List, List]:
     """This function generates the selected in-range atom corresponding to the central atom ["CA", "CB"].
@@ -177,6 +168,7 @@ def select_in_range_atoms(
         ca_list: list containing CA in the PDB file.
         cb_list: list containing CB in the PDB file.
         ca_cb_vectors: list containing ca_cb vectors.
+        n_coords: nitrogen coordinates.
         selected_central_atom_type: string stating which central atom is selected.
         shift: shift of carbon alpha along the diagonal direction.
     Returns:
@@ -201,13 +193,30 @@ def select_in_range_atoms(
     central_atom_coords = []
 
     # searching for atoms that are within the range
-    for central_atom, ca_cb_vector in zip(central_atom_list, ca_cb_vectors):
+    for central_atom, ca_cb_vector, ca, cb, n_coord in zip(
+            central_atom_list, ca_cb_vectors, ca_list, cb_list, n_coords
+    ):
         # the first atom in the voxel is the central atom.
         voxel_atom_list = [central_atom]
 
         # generate rotation matrix
         # same rotation for all the atoms from one residue
-        rot = np.identity(3) if selected_central_atom_type == "CA" else rotmat(ca_cb_vector, corner_vector)
+        if selected_central_atom_type == "CB":
+            rot = rotmat(ca_cb_vector, corner_vector)
+
+            vector_ca_cb = rot @ (ca.coord - cb.coord)
+            vector_n_cb = rot @ (n_coord - cb.coord)
+            oro_vector_cacbn_plane = np.cross(vector_n_cb, vector_ca_cb)
+            oro_vector_lccacb_plane = np.cross(vector_ca_cb, np.array([-1, 1, 1]))
+            angle_between_plane = (oro_vector_cacbn_plane @ oro_vector_lccacb_plane) / \
+                                  (np.linalg.norm(oro_vector_cacbn_plane) * np.linalg.norm(oro_vector_lccacb_plane))
+            angle_between_plane = min(max(angle_between_plane, -1), 1)
+            angle = math.acos(angle_between_plane)
+            clock_wise = -vector_ca_cb @ np.cross(oro_vector_lccacb_plane, oro_vector_cacbn_plane) > 0
+            rot_angle = 1 + angle if not clock_wise else 1 - angle
+            rot_further = rotaxis2m(-rot_angle, Vector(vector_ca_cb))
+        else:
+            rot, rot_further = np.identity(3), np.identity(3)
 
         # Shift of Ca position can be applied by confirming the shift of the central atom, i.e. by confirming the new
         # central atom coordinates, vector subtraction
@@ -221,7 +230,7 @@ def select_in_range_atoms(
         for atom in searched_atom_list:
             # remember to left-multiply rotation matrix all the time when requiring atom coordinates.
             central_range_list = range_editor(central_atom_coord)
-            atom_coord = rot @ (atom.get_coord() - central_atom_coord) + central_atom_coord
+            atom_coord = rot_further @ rot @ (atom.get_coord() - central_atom_coord) + central_atom_coord
             range_x, range_y, range_z = central_range_list[0], central_range_list[1], central_range_list[2]
             atom_x, atom_y, atom_z = atom_coord[0], atom_coord[1], atom_coord[2]
             if range_x[0] < atom_x < range_x[1] and \
@@ -243,7 +252,7 @@ def select_in_range_atoms(
         voxel_atom_lists.append(voxel_atom_list)
 
         # save rotation matrix
-        rot_mats.append(rot)
+        rot_mats.append([rot, rot_further])
 
         # save central atom coordinate
         central_atom_coords.append(central_atom_coord)
@@ -256,16 +265,16 @@ def generate_voxel_atom_lists(struct: Bio.PDB.Structure.Structure) -> Tuple[List
     Args:
         struct: structure in biopython.
     """
-    ca_list, cb_list, ca_cb_vectors, boxes_counter = gen_ca_cb_vectors(struct)
+    ca_list, cb_list, ca_cb_vectors, boxes_counter, n_coords = gen_ca_cb_vectors(struct)
     voxel_atom_lists, rot_mats, central_atom_coords = select_in_range_atoms(
-        struct, ca_list, cb_list, ca_cb_vectors, selected_central_atom_type="CB", shift=0
+        struct, ca_list, cb_list, ca_cb_vectors, n_coords, selected_central_atom_type="CB", shift=0
     )
     return voxel_atom_lists, rot_mats, central_atom_coords, boxes_counter
 
 
 def generate_selected_element_voxel(
         arguments, elements_list: List, selected_element: str, voxel_atom_list: List,
-        rot_mat: np.array, central_atom_coord: np.array, sasa_results: freesasa.Result,
+        rot_mat: List[np.array], central_atom_coord: np.array, struct_pqr, sasa_results: freesasa.Result,
 ) -> Tuple[ndarray, ndarray, ndarray]:
     """This function generate selected-element voxel by inserting True/False to 20*20*20 voxel.
     Args:
@@ -275,6 +284,7 @@ def generate_selected_element_voxel(
         voxel_atom_list: The pre-generated voxel list containing central CA atoms and the surrounding atoms.
         rot_mat: rotation matrix for the selected residue.
         central_atom_coord: list of central atom coordinate after applying shift.
+        struct_pqr: PQR structure.
         sasa_results: results of solvent accessible surface area.
     """
     # 1. create True False voxel.
@@ -290,7 +300,6 @@ def generate_selected_element_voxel(
     for atom in voxel_atom_list[1:]:
         if atom.element == selected_element and atom.element in elements_list:
             selected_atom_list.append(atom)
-
     # 3. Generate the coordinates of 20 * 20 * 20 voxels,
     # 1 centric coordinate for 1 voxel, (20, 20, 20, 3)
     initial_atom_coord = central_atom_coord - num_of_voxels / 2 * len_of_voxel + len_of_voxel / 2
@@ -305,9 +314,9 @@ def generate_selected_element_voxel(
 
     # 4. Add atom to the voxel.
     for atom in selected_atom_list:
-        atom_coord = rot_mat @ (atom.coord - central_atom_coord) + central_atom_coord
+        atom_coord = rot_mat[1] @ rot_mat[0] @ (atom.get_coord() - central_atom_coord) + central_atom_coord
         voxels_bool, partial_charges, sasa = add_atom_to_voxel(
-            arguments, atom, atom_coord, voxels_coords, voxels_bool, partial_charges, sasa_results, sasa
+            arguments, atom, atom_coord, voxels_coords, voxels_bool, partial_charges, struct_pqr, sasa_results, sasa
         )
     return voxels_bool, partial_charges, sasa
 
@@ -333,6 +342,7 @@ def add_atom_to_voxel(
         voxels_coords: ndarray,
         voxels_bool: ndarray,
         partial_charges: ndarray,
+        struct_pqr,
         sasa_results: freesasa.Result,
         sasa: ndarray,
 ) -> Tuple[ndarray, ndarray, ndarray]:
@@ -344,6 +354,7 @@ def add_atom_to_voxel(
         voxels_coords: coordinates of the 20*20*20 voxels.
         voxels_bool: voxel array in bool.
         partial_charges: partial_charge channel, 20*20*20 array.
+        struct_pqr: PQR structure.
         sasa_results: results of solvent accessible surface area.
         sasa: solvent accessible surface area array.
 
@@ -355,15 +366,19 @@ def add_atom_to_voxel(
 
     radius_table = {"C": 1.7, "O": 1.37, "N": 1.45, "P": 1.49, "S": 1.7, "H": 1.0}
 
+    chain = atom.parent.parent
+    res_full_name = atom.parent.get_id()
+    pqr_atom = struct_pqr[0][chain.id][res_full_name][atom.name]
+
     dists_element_voxels_coords = np.sqrt(np.sum((voxels_coords - atom_coord) ** 2, axis=-1))
     # (20, 20, 20)
-    contact_element_voxel_coords = np.where(dists_element_voxels_coords < radius_table[atom.element])
+    contact_element_voxel_coords = np.where(dists_element_voxels_coords <= radius_table[atom.element])
     add_bool = contact_element_voxel_coords
     voxels_bool[add_bool[0].T, add_bool[1].T, add_bool[2].T] = True
     if arguments.add_partial_charges:
-        partial_charges[add_bool[0].T, add_bool[1].T, add_bool[2].T] = atom.occupancy
+        partial_charges[add_bool[0].T, add_bool[1].T, add_bool[2].T] = pqr_atom.get_charge()
     if arguments.add_sasa:
-        sasa[add_bool[0].T, add_bool[1].T, add_bool[2].T] = sasa_results.atomArea(atom.get_serial_number() - 1)
+        sasa[add_bool[0].T, add_bool[1].T, add_bool[2].T] = sasa_results.atomArea(atom.get_serial_number())
 
     return voxels_bool, partial_charges, sasa
 
@@ -388,25 +403,41 @@ def visualize_voxels(arguments, voxel_list: List):
     plt.show()
 
 
-def cal_sasa(struct, pdb_name):
+def cal_sasa(struct, struct_pqr, pdb_name):
     """Calculate sasa results for the given structure."""
+    elements_list = ["C", "N", "O", "S"]
     # calculate sasa
     all_radiis = []
-    all_coords = [atom.coord for atom in struct.get_atoms()]
-
-    # requiring b_factor (b_factor cannot be obtained by atom.bfactor due to the biopython reason)
-    pqr2pdb_file_path = pdb_name + "_pqr.pdb"
-    with open(pqr2pdb_file_path, "r") as f:
-        for line in f.readlines():
-            content = line.split()
-            if len(content) > 1:
-                all_radiis.append(float(content[-2]))
+    all_coords = []
+    # pqr content
+    pqr_model = struct_pqr[0]
+    idx = 0
+    for atom in struct.get_atoms():
+        if atom.element not in elements_list:
+            continue
+        chain = atom.parent.parent
+        res_full_id = atom.parent.get_id()
+        atom_name = atom.name
+        all_radiis.append(pqr_model[chain.id][res_full_id][atom_name].radius)
+        all_coords.append(atom.coord)
+        atom.set_serial_number(idx)
+        idx += 1
 
     sasa_results = freesasa.calcCoord(np.array(all_coords).flatten(), all_radiis)
     return sasa_results
 
 
-def gen_voxel_binary_array(arguments, f, struct, pdb_name,
+def generate_atom_list_dict(voxel_atom_list):
+    dict_atom = {}
+    for atom in voxel_atom_list:
+        if atom.name not in dict_atom:
+            dict_atom[atom.name] = 1
+        else:
+            dict_atom[atom.name] += 1
+    return dict_atom
+
+
+def gen_voxel_binary_array(arguments, f, struct, struct_pqr, pdb_name,
                            voxel_atom_lists: List, rot_mats: List,
                            central_atom_coords: List, boxes_counter: dict,):
     """This function generates voxel binary array given the
@@ -416,23 +447,44 @@ def gen_voxel_binary_array(arguments, f, struct, pdb_name,
         arguments: arguments of the user.
         f: hdf5 file for the pdb
         struct: PDB structure in biopython.
+        struct_pqr: PDB structure in corresponding pqr file.
         pdb_name: PDB ID of interest.
         voxel_atom_lists: voxel atom lists of each voxel box. (len = num of residues in total)
         rot_mats: rotation matrix of each voxel box. (len = num of residues in total)
         central_atom_coords: central atom coordinates of each box.
         boxes_counter: {"chain_id": number_of_boxes_in_the_chain}
     """
+    # calculate sasa
+    sasa_results = cal_sasa(struct, struct_pqr, pdb_name) if arguments.add_sasa else None
+
+    # record generated atom list dict
+    dict_list = []
     for idx, voxel_atom_list, rot_mat, central_atom_coord in tqdm(zip(
             np.arange(len(voxel_atom_lists)), voxel_atom_lists, rot_mats, central_atom_coords
     ), total=len(voxel_atom_lists)):
+        # set default flag
+        skip = False
+
+        # generate corresponding atom dictionary
+        atom_dict = generate_atom_list_dict(voxel_atom_list)
+
+        # check whether it is the same with the previous generated dictionary
+        for dic in dict_list:
+            if atom_dict == dic:
+                skip = True
+                break
+
+        # if the atom list is the same, skip the voxel generation process.
+        if skip:
+            continue
+        # record atomic dictionary
+        dict_list.append(atom_dict)
+
         # take out the central atom
         central_atom = voxel_atom_list[0]
 
         # iterate through ["C", "N", "O", "S", "H"]
-        elements_list = ["C", "N", "O", "S", "H"] if arguments.addH else ["C", "N", "O", "S"]
-
-        # calculate sasa
-        sasa_results = cal_sasa(struct, pdb_name) if arguments.add_sasa else None
+        elements_list = ["C", "N", "O", "S"]
 
         all_voxel = []
         all_partial_charges = []
@@ -445,6 +497,7 @@ def gen_voxel_binary_array(arguments, f, struct, pdb_name,
                 voxel_atom_list,
                 rot_mat,
                 central_atom_coord,
+                struct_pqr,
                 sasa_results,
             )
             all_voxel.append(selected_element_voxel)
@@ -455,8 +508,10 @@ def gen_voxel_binary_array(arguments, f, struct, pdb_name,
         # visualize_voxels(arguments, all_voxel)
 
         # store voxel, partial_charges and sasa as file format of hdf5
-        # binary voxel box for 4 channels
-        voxel_per_residue = np.array(all_voxel, dtype=np.bool_)  # (4, 20, 20, 20)
+        if arguments.add_sasa and arguments.add_partial_charges:
+            all_voxel = all_voxel + all_partial_charges + all_sasa
+        # binary voxel box for 4 / 12 channels
+        voxel_per_residue = np.array(all_voxel, dtype=np.half)  # (4 / 12, 20, 20, 20)
 
         # metadata
         pdb_id = central_atom.parent.get_full_id()[0]
@@ -467,8 +522,8 @@ def gen_voxel_binary_array(arguments, f, struct, pdb_name,
         residue_icode = central_atom.parent.get_full_id()[-1][-1]
 
         # chain_group creation
-        group = f.create_group(chain_id) if chain_id not in f else f[chain_id]
-        dataset = group.create_dataset(str(idx), data=voxel_per_residue, compression="lzf")
+        group = f.create_group(chain_id, track_order=True) if chain_id not in f else f[chain_id]
+        dataset = group.create_dataset(str(idx), data=voxel_per_residue, compression="lzf", track_order=True)
 
         # attributes generation
         dataset.attrs["pdb_id"] = pdb_id
@@ -515,42 +570,38 @@ def gen_voxel_box_file(arguments, idx):
     print(f"Dealing with file index: {idx}, {str(Path(arguments.hdf5_file_dir) / pdb_id) + '.hdf5'}")
 
     # Load protein structure
-    struct = load_protein(arguments, pdb_name, pdb_path)
+    struct, struct_pqr = load_protein(arguments, pdb_name, pdb_path)
 
     # start a hdf5 file
-    f = h5py.File(str(Path(arguments.hdf5_file_dir) / pdb_id) + ".hdf5", "w")
+    f = h5py.File(str(Path.cwd() / pdb_id) + ".hdf5", "w", track_order=True)
     (
         voxel_atom_lists, rot_mats, central_atom_coords, boxes_counter
     ) = generate_voxel_atom_lists(struct)  # (num_ca, num_atoms_in_voxel)
 
-    gen_voxel_binary_array(arguments, f, struct, pdb_name,
+    gen_voxel_binary_array(arguments, f, struct, struct_pqr, pdb_name,
                            voxel_atom_lists, rot_mats, central_atom_coords, boxes_counter)
     f.close()
 
-    # # count number if residues in the structure.
-    # num_residues = count_res(struct)
-    #
-    # # start a hdf5 file
-    # f = h5py.File(str(Path(arguments.hdf5_file_dir) / pdb_id) + ".hdf5", "a")
-    #
-    # print(f"Dealing with file index: {idx}, {str(Path(arguments.hdf5_file_dir) / pdb_id) + '.hdf5'}")
-    #
-    # # count number of dataset if hdf5 file
-    # num_datasets = len([box for chain in f.keys() for box in f[chain]])
-    # f.close()
-    # # if the hdf5 file is completed, skip the function
-    # if num_datasets == num_residues:
-    #     print(f"skip {str(Path(arguments.hdf5_file_dir) / pdb_id)}")
-    #     return
-    #
-    # else:
-    #     f = h5py.File(str(Path(arguments.hdf5_file_dir) / pdb_id) + ".hdf5", "w")
-    #     # generate atom lists for 20*20*20 voxels, num_of_residue in pdb file in total.
-    #     (
-    #         voxel_atom_lists, rot_mats, central_atom_coords, boxes_counter
-    #     ) = generate_voxel_atom_lists(struct)  # (num_ca, num_atoms_in_voxel)
-    #
-    #     gen_voxel_binary_array(arguments, f, struct, pdb_name,
-    #                            voxel_atom_lists, rot_mats, central_atom_coords, boxes_counter)
-    #     f.close()
-    #     return
+# @hydra.main(version_base=None, config_path="../../config/voxel_box", config_name="voxel_box")
+# def gen_voxel_box_file(arguments):
+#     """The main function of generating voxels.
+#
+#     Args:
+#         arguments: arguments input from user.
+#     """
+#     # configuration set up
+#     pdb_name = ""
+#     pdb_path = "3c70.pdb1"
+#     pdb_id = "3c70"
+#
+#     # Load protein structure
+#     struct, struct_pqr = load_protein(arguments, pdb_name, pdb_path)
+#
+#     # start a hdf5 file
+#     f = h5py.File(str(Path.cwd() / pdb_id) + ".hdf5",  "w", track_order=True)
+#     (
+#         voxel_atom_lists, rot_mats, central_atom_coords, boxes_counter
+#     ) = generate_voxel_atom_lists(struct)  # (num_ca, num_atoms_in_voxel)
+#     gen_voxel_binary_array(arguments, f, struct, struct_pqr, pdb_name,
+#                            voxel_atom_lists, rot_mats, central_atom_coords, boxes_counter)
+#     f.close()
