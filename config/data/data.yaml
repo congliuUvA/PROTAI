@@ -19,7 +19,7 @@ smaller_hdf5_file_dir: smaller_voxels_hdf5
 partition_idx: 1
 
 # num of partitions of data generation
-num_partition: 2
+num_partition: 1
 
 # use gaussian transformation
 use_transform: False
