@@ -53,35 +53,38 @@ def load_protein(arguments, pdb_name: str, file_path: str) -> Bio.PDB.Structure.
         )
 
     struct = PDB_parser.get_structure(pdb_name, file_path)
-    struct_pqr = PQR_parser.get_structure(pdb_name + "_pqr", pqr_file_path) if pqr_file_path else None
+    struct_pqr = PQR_parser.get_structure(pdb_name + "_pqr", pqr_file_path) if Path(pqr_file_path).exists() else None
+    if struct_pqr is None:
+        skip = True
 
-    # remove hetero residues from struct
-    for model in struct.get_list():
-        for chain in model.get_list():
-            for res in chain.get_list():
-                # remove hetero residues
-                if res.get_id()[0] not in [" ", "W"]:
-                    chain.__delitem__(res.get_id())
+    if not skip:
+        # remove hetero residues from struct
+        for model in struct.get_list():
+            for chain in model.get_list():
+                for res in chain.get_list():
+                    # remove hetero residues
+                    if res.get_id()[0] not in [" ", "W"]:
+                        chain.__delitem__(res.get_id())
 
-    # reset atomic serial number for getting access to sasa results
-    idx = -1
-    for atom in struct.get_atoms():
-        atom.set_serial_number(idx)
+        # reset atomic serial number for getting access to sasa results
+        idx = -1
+        for atom in struct.get_atoms():
+            atom.set_serial_number(idx)
 
-    # check whether generated pqr is consistent with pdb
-    elements_list = ["C", "N", "O", "S"]
-    # pqr content
-    pqr_model = struct_pqr[0]
-    for atom in struct.get_atoms():
-        if atom.element not in elements_list:
-            continue
-        chain = atom.parent.parent
-        res_full_id = atom.parent.get_id()
-        atom_name = atom.name
-        try:
-            radii = pqr_model[chain.id][res_full_id][atom_name].radius
-        except KeyError:
-            skip = True
+        # check whether generated pqr is consistent with pdb
+        elements_list = ["C", "N", "O", "S"]
+        # pqr content
+        pqr_model = struct_pqr[0]
+        for atom in struct.get_atoms():
+            if atom.element not in elements_list:
+                continue
+            chain = atom.parent.parent
+            res_full_id = atom.parent.get_id()
+            atom_name = atom.name
+            try:
+                radii = pqr_model[chain.id][res_full_id][atom_name].radius
+            except KeyError:
+                skip = True
 
     return struct, struct_pqr, skip
 
