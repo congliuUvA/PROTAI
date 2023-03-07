@@ -34,7 +34,7 @@ def data_gen(args: DictConfig):
     np.save(str(gz_npy_path), gz_file_list) if not gz_npy_path.exists() else None
 
     # decide how many files in gz_file_list to generate
-    gz_file_list = gz_file_list[900:int(len(gz_file_list) * args_data.proportion_pdb)]
+    gz_file_list = gz_file_list[930:int(len(gz_file_list) * args_data.proportion_pdb)]
 
     logger.info(f"Processing {len(gz_file_list)} pdb files!")
 
@@ -67,7 +67,6 @@ def data_gen(args: DictConfig):
 
     # ray tasks
     logger.info("Start ray tasks.")
-    print(gz_file_list[start: end].shape)
     tasks = []
     for pdb in gz_file_list[start: end]:
         # unzipped pdb file name
