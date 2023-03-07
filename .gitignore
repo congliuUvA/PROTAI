@@ -16,3 +16,4 @@ baseline/cp_hddstore.py
 .DS_Store
 *.pdb1
 *.pqr
+*.log
