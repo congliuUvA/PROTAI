@@ -28,8 +28,8 @@ RES_NAME = ["ALA", "ARG", "ASN", "ASP", "CYS",
             "LEU", "LYS", "MET", "PHE", "PRO",
             "SER", "THR", "TRP", "TYR", "VAL"]
 
-PDB_parser = PDBParser(QUIET=1)
-PQR_parser = PDBParser(QUIET=1, is_pqr=True)
+PDB_parser = PDBParser(QUIET=0)
+PQR_parser = PDBParser(QUIET=0, is_pqr=True)
 CIF_parser = MMCIFParser(QUIET=1)
 
 
