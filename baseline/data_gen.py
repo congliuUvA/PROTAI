@@ -19,7 +19,7 @@ def data_gen(args: DictConfig):
     args_data = args.data
     args_voxel_box = args.voxel_box
     baseline_dir = Path.cwd()  # baseline/
-    root_dir = baseline_dir.parent if not args_data.use_hddstore else "/hddstore/cliu3"
+    root_dir = baseline_dir.parent if not args_data.use_hddstore else "/ssdstore/cliu3"
 
     # raw pdb file path
     raw_pdb_dir = root_dir / Path(args_data.raw_pdb_dir)
@@ -32,6 +32,10 @@ def data_gen(args: DictConfig):
     gz_file_list = np.load(str(gz_npy_path), allow_pickle=True) if gz_npy_path.exists() \
         else np.array([pdb for pdb in raw_pdb_dir.rglob("*.gz")])
     np.save(str(gz_npy_path), gz_file_list) if not gz_npy_path.exists() else None
+
+    # decide how many files in gz_file_list to generate
+    gz_file_list = gz_file_list[:int(len(gz_file_list) * args_data.proportion_pdb)]
+    logger.info(f"Processing {len(gz_file_list)} pdb files!")
 
     # download raw data set if not existed in the WR.
     if not raw_pdb_dir.exists():
@@ -61,34 +65,6 @@ def data_gen(args: DictConfig):
     logger.info("Start ray tasks.")
     tasks = []
     for pdb in gz_file_list[start: end]:
-        # # 1/4
-        # # if idx > int(total / 4):
-        # #     logger.info("1/4 completed")
-        # #     break
-        #
-        # # 1/4 - 2/4
-        # if idx <= int(total / 4):
-        #     idx += 1
-        #     continue
-        # if idx > 2*int(total / 4):
-        #     logger.info("2/4 completed")
-        #     break
-        #
-        # # 2/4 - 3/4
-        # # if idx <= 2*int(total / 4):
-        # #     idx += 1
-        # #     continue
-        # # if idx > 3*int(total / 4):
-        # #     logger.info("3/4 completed")
-        # #     break
-        #
-        # # 3/4 - 4/4
-        # # if idx <= 3*int(total / 4):
-        # #     idx += 1
-        # #     continue
-        # # if idx == total - 1:
-        # #     logger.info("4/4 completed")
-
         # unzipped pdb file name
         pdb_pure_id = pdb.name.split(".")[0]
         assembly_id = pdb.name.split(".")[1]
