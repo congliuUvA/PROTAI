@@ -34,7 +34,7 @@ def data_gen(args: DictConfig):
     np.save(str(gz_npy_path), gz_file_list) if not gz_npy_path.exists() else None
 
     # decide how many files in gz_file_list to generate
-    gz_file_list = gz_file_list[:int(len(gz_file_list) * args_data.proportion_pdb)]
+    gz_file_list = gz_file_list[900:int(len(gz_file_list) * args_data.proportion_pdb)]
 
     logger.info(f"Processing {len(gz_file_list)} pdb files!")
 
@@ -82,14 +82,14 @@ def data_gen(args: DictConfig):
             args_voxel_box.pdb_path = pdb_unzip
             args_voxel_box.pdb_id = pdb_id
 
-            task = gen_voxel_box_file.remote(args_voxel_box, idx)
-            # gen_voxel_box_file(args_voxel_box, idx)
+            # task = gen_voxel_box_file.remote(args_voxel_box, idx)
+            gen_voxel_box_file(args_voxel_box, idx)
 
-            tasks.append(task)
+            # tasks.append(task)
 
             idx += 1
 
-    ray.get(tasks)
+    # ray.get(tasks)
     logger.info(f"{args_data.partition_idx + 1} / {args_data.num_partition} completed!")
 
 
