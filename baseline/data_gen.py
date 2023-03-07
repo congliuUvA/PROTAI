@@ -67,6 +67,7 @@ def data_gen(args: DictConfig):
 
     # ray tasks
     logger.info("Start ray tasks.")
+    print(gz_file_list[start: end].shape)
     tasks = []
     for pdb in gz_file_list[start: end]:
         # unzipped pdb file name
