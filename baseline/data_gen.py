@@ -35,7 +35,7 @@ def data_gen(args: DictConfig):
 
     # decide how many files in gz_file_list to generate
     gz_file_list = gz_file_list[:int(len(gz_file_list) * args_data.proportion_pdb)]
-    gz_file_list = gz_file_list[:1]
+    gz_file_list = gz_file_list[:1000]
 
     logger.info(f"Processing {len(gz_file_list)} pdb files!")
 
