@@ -5,10 +5,10 @@
 
 # Add hydrogen to the pdb file or not
 addH: False
-# Add partial charges to the file or not (atom.occupancy = partial charges)
-add_partial_charges: False
-# Add sasa to the file or not (atom.bfactor = atom radii)
-add_sasa: False
+# Add partial charges to the file or not
+add_partial_charges: True
+# Add sasa to the file or not
+add_sasa: True
 # PDB pure ID
 pdb_name: "3gbn"
 # PDB file path

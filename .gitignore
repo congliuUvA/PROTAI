@@ -13,3 +13,4 @@ dataset_split_v1_0_0.csv
 baseline/data_gen_rest.py
 *.hdf5
 baseline/cp_hddstore.py
+.DS_Store
