@@ -459,9 +459,12 @@ def gen_voxel_binary_array(arguments, f, struct, struct_pqr, pdb_name,
 
     # record generated atom list dict
     dict_list = []
-    for idx, voxel_atom_list, rot_mat, central_atom_coord in tqdm(zip(
+    # for idx, voxel_atom_list, rot_mat, central_atom_coord in tqdm(zip(
+    #         np.arange(len(voxel_atom_lists)), voxel_atom_lists, rot_mats, central_atom_coords
+    # ), total=len(voxel_atom_lists)):
+    for idx, voxel_atom_list, rot_mat, central_atom_coord in zip(
             np.arange(len(voxel_atom_lists)), voxel_atom_lists, rot_mats, central_atom_coords
-    ), total=len(voxel_atom_lists)):
+    ):
         # set default flag
         skip = False
 
