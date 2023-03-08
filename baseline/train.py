@@ -190,6 +190,7 @@ def main(args: DictConfig):
         dataset_split_csv_path=dataset_split_csv_path,
         val=True,
         transform=transformation,
+        use_sampler=args_model.use_sampler,
     )
     val_dataloader = DataLoader(
         dataset=val_set,
@@ -198,7 +199,7 @@ def main(args: DictConfig):
         num_workers=args_model.num_workers,
         pin_memory=True,
     )
-    print(val_set.freq)
+    logger.info(val_set.freq)
 
     loss_func = nn.CrossEntropyLoss()
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -232,7 +233,7 @@ def main(args: DictConfig):
             transform=transformation,
             use_sampler=args_model.use_sampler
         )
-        print(train_set.freq)
+        logger.info(train_set.freq)
         if args_model.use_sampler:
             weighted_sampler = WeightedRandomSampler(
                 weights=train_set.proportion_list,
