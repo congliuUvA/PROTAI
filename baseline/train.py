@@ -201,7 +201,7 @@ def main(args: DictConfig):
     if args_model.model_name == "CNN":
         model = CNN(args_model.num_classes, args_model.num_channels, args_model.drop_out)
     if args_model.model_name == "ResNet":
-        model = ResNet3D(Block, [1, 1, 1, 1])
+        model = ResNet3D(Block, [1, 1, 1, 1], args_model.num_classes, args_model.num_channels)
     model = nn.DataParallel(model)
     model = model.to(device)
     if args_model.best_model_ckpt_path != "":
