@@ -18,6 +18,7 @@ from pathlib import Path
 from Bio.PDB.PDBParser import PDBParser
 from Bio.PDB.MMCIFParser import MMCIFParser
 import os
+from rdkit import Chem
 import hydra
 
 num_of_voxels = 20
@@ -476,32 +477,12 @@ def gen_voxel_binary_array(arguments, f, struct, struct_pqr, pdb_name,
     # calculate sasa
     sasa_results = cal_sasa(struct, struct_pqr, pdb_name) if arguments.add_sasa else None
 
-    # record generated atom list dict
-    dict_list = []
     # for idx, voxel_atom_list, rot_mat, central_atom_coord in tqdm(zip(
     #         np.arange(len(voxel_atom_lists)), voxel_atom_lists, rot_mats, central_atom_coords
     # ), total=len(voxel_atom_lists)):
     for idx, voxel_atom_list, rot_mat, central_atom_coord in zip(
             np.arange(len(voxel_atom_lists)), voxel_atom_lists, rot_mats, central_atom_coords
     ):
-        # set default flag
-        skip = False
-
-        # generate corresponding atom dictionary
-        atom_dict = generate_atom_list_dict(voxel_atom_list)
-
-        # check whether it is the same with the previous generated dictionary
-        for dic in dict_list:
-            if atom_dict == dic:
-                skip = True
-                break
-
-        # if the atom list is the same, skip the voxel generation process.
-        if skip:
-            continue
-        # record atomic dictionary
-        dict_list.append(atom_dict)
-
         # take out the central atom
         central_atom = voxel_atom_list[0]
 
