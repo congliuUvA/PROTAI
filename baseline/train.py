@@ -179,7 +179,7 @@ def main(args: DictConfig):
     args_data = args.data
 
     parent_path = Path().cwd()
-    hdf5_file_path = Path("/ssdstore/cliu3") / args_data.hdf5_file_dir + "_last"
+    hdf5_file_path = Path("/ssdstore/cliu3") / args_data.hdf5_file_dir
     dataset_split_csv_path = parent_path.parent / args_data.dataset_split_csv
 
     # transformation of the datasets
