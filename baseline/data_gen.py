@@ -87,7 +87,7 @@ def data_gen(args: DictConfig):
             args_voxel_box.pdb_path = pdb_unzip
             args_voxel_box.pdb_id = pdb_id
 
-            task = gen_voxel_box_file.remote(args_voxel_box, idx)
+            task = gen_voxel_box_file.remote(args_voxel_box, idx, logger)
             # gen_voxel_box_file(args_voxel_box, idx)
 
             tasks.append(task)

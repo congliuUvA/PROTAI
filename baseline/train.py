@@ -204,7 +204,7 @@ def main(args: DictConfig):
         model = ResNet3D(Block, [1, 1, 1, 1])
     model = nn.DataParallel(model)
     model = model.to(device)
-    if args_model.ckpt_path != "":
+    if args_model.best_model_ckpt_path != "":
         model_path = parent_path / args_model.model_ckpt_path / args_model.best_model_ckpt_path
         state_dict = torch.load(model_path)
         model.load_state_dict(state_dict["state_dict"])

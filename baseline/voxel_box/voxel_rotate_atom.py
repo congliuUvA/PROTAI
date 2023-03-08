@@ -578,18 +578,20 @@ def count_res(struct: Bio.PDB.Structure.Structure) -> int:
 
 
 @ray.remote
-def gen_voxel_box_file(arguments, idx):
+def gen_voxel_box_file(arguments, idx, logger):
     """The main function of generating voxels.
 
     Args:
+        idx: idx of file
         arguments: arguments input from user.
+        logger: logger from data_gen.py
     """
     # configuration set up
     pdb_name = arguments.pdb_name
     pdb_path = arguments.pdb_path
     pdb_id = arguments.pdb_id
 
-    print(f"Dealing with file index: {idx}, {str(Path(arguments.hdf5_file_dir) / pdb_id) + '.hdf5'}")
+    logger.info(f"Dealing with file index: {idx}, {str(Path(arguments.hdf5_file_dir) / pdb_id) + '.hdf5'}")
 
     # Load protein structure
     struct, struct_pqr, skip = load_protein(arguments, pdb_name, pdb_path)
