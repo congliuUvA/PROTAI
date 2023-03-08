@@ -37,4 +37,4 @@ validation_step: 500
 # drop out rate
 drop_out: 0
 # model checkpoint path
-best_model_ckpt_path: "all_CNN_1_best_acc_0.6376586556434631.pt"
+best_model_ckpt_path: ""
