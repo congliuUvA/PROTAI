@@ -124,8 +124,9 @@ class VoxelsDataset(Dataset):
             if chain not in list(f.keys()):
                 continue
             # each box count as one data sample
-            for box_idx in f[chain]:
-                label = "" if not self.use_sampler else f[chain][box_idx].attrs["residue_name"]
+            for i, box_idx in enumerate(f[chain]):
+                # label = "" if not self.use_sampler else f[chain][box_idx].attrs["residue_name"]
+                label = "" if not self.use_sampler else f[chain].attrs["label_list"][i]
                 self.look_up_table[data_idx] = str(hdf5_file) + "$" + str(chain) + "$" + box_idx + "$" + label
                 data_idx += 1
             f.close()
