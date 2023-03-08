@@ -131,6 +131,7 @@ class VoxelsDataset(Dataset):
             if data_idx > self.limit_th:
                 break
         self.length = data_idx
+
     def gen_proportion_list(self):
         self.freq = {}
         self.proportion_list = []
@@ -144,6 +145,12 @@ class VoxelsDataset(Dataset):
             self.proportion_list.append(self.freq[value.split("$")[-1]])
 
         self.proportion_list = np.array(self.proportion_list) / sum(self.proportion_list)
+
+        # normalizing frequency
+        total = sum(self.freq.values())
+        for aa, freq in self.freq.items():
+            self.freq[aa] = freq / total
+
         return self.proportion_list
 
 

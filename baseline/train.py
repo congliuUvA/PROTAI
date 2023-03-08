@@ -247,8 +247,8 @@ def main(args: DictConfig):
         else:
             train_dataloader = DataLoader(
                 dataset=train_set,
-                batch_size=1,
-                shuffle=False,
+                batch_size=args_model.batch_size,
+                shuffle=True,
                 num_workers=args_model.num_workers,
                 pin_memory=True,
             )
