@@ -19,6 +19,7 @@ from Bio.PDB.PDBParser import PDBParser
 from Bio.PDB.MMCIFParser import MMCIFParser
 import os
 from rdkit import Chem
+from rdkit.Chem import AllChem
 import hydra
 
 num_of_voxels = 20
@@ -45,49 +46,16 @@ def load_protein(arguments, pdb_name: str, file_path: str) -> Bio.PDB.Structure.
     Returns:
         struct: Structure of the selected protein in Biopython.
     """
-    pqr_file_path = None
+    mol = None
     skip = False
     if arguments.add_partial_charges:
-        pqr_file_path = str(Path(file_path).parent.joinpath(arguments.pdb_id)) + ".pqr"
-        os.system(
-            f"pdb2pqr30 --ff=CHARMM --include-header --keep-chain -q --log-level ERROR {file_path} {pqr_file_path}"
-        )
+        mol = Chem.MolFromPDBFile(str(file_path))
+        if not mol:
+            skip = True
 
     struct = PDB_parser.get_structure(pdb_name, file_path)
-    struct_pqr = PQR_parser.get_structure(pdb_name + "_pqr", pqr_file_path) if Path(pqr_file_path).exists() else None
-    if struct_pqr is None:
-        skip = True
 
-    if not skip:
-        # remove hetero residues from struct
-        for model in struct.get_list():
-            for chain in model.get_list():
-                for res in chain.get_list():
-                    # remove hetero residues
-                    if res.get_id()[0] not in [" ", "W"]:
-                        chain.__delitem__(res.get_id())
-
-        # reset atomic serial number for getting access to sasa results
-        idx = -1
-        for atom in struct.get_atoms():
-            atom.set_serial_number(idx)
-
-        # check whether generated pqr is consistent with pdb
-        elements_list = ["C", "N", "O", "S"]
-        # pqr content
-        pqr_model = struct_pqr[0]
-        for atom in struct.get_atoms():
-            if atom.element not in elements_list:
-                continue
-            chain = atom.parent.parent
-            res_full_id = atom.parent.get_id()
-            atom_name = atom.name
-            try:
-                radii = pqr_model[chain.id][res_full_id][atom_name].radius
-            except KeyError:
-                skip = True
-
-    return struct, struct_pqr, skip
+    return struct, mol, skip
 
 
 def range_editor(coord: ndarray) -> List:
@@ -294,7 +262,7 @@ def generate_voxel_atom_lists(struct: Bio.PDB.Structure.Structure) -> Tuple[List
 
 def generate_selected_element_voxel(
         arguments, elements_list: List, selected_element: str, voxel_atom_list: List,
-        rot_mat: List[np.array], central_atom_coord: np.array, struct_pqr, sasa_results: freesasa.Result,
+        rot_mat: List[np.array], central_atom_coord: np.array, partial_charge_results, sasa_results: freesasa.Result,
 ) -> Tuple[ndarray, ndarray, ndarray]:
     """This function generate selected-element voxel by inserting True/False to 20*20*20 voxel.
     Args:
@@ -304,7 +272,7 @@ def generate_selected_element_voxel(
         voxel_atom_list: The pre-generated voxel list containing central CA atoms and the surrounding atoms.
         rot_mat: rotation matrix for the selected residue.
         central_atom_coord: list of central atom coordinate after applying shift.
-        struct_pqr: PQR structure.
+        partial_charge_results: dictionary containing serial number and partial charges.
         sasa_results: results of solvent accessible surface area.
     """
     # 1. create True False voxel.
@@ -336,7 +304,8 @@ def generate_selected_element_voxel(
     for atom in selected_atom_list:
         atom_coord = rot_mat[1] @ rot_mat[0] @ (atom.get_coord() - central_atom_coord) + central_atom_coord
         voxels_bool, partial_charges, sasa = add_atom_to_voxel(
-            arguments, atom, atom_coord, voxels_coords, voxels_bool, partial_charges, struct_pqr, sasa_results, sasa
+            arguments, atom, atom_coord, voxels_coords, voxels_bool,
+            partial_charges, partial_charge_results, sasa_results, sasa
         )
     return voxels_bool, partial_charges, sasa
 
@@ -362,7 +331,7 @@ def add_atom_to_voxel(
         voxels_coords: ndarray,
         voxels_bool: ndarray,
         partial_charges: ndarray,
-        struct_pqr,
+        partial_charge_results: dict,
         sasa_results: freesasa.Result,
         sasa: ndarray,
 ) -> Tuple[ndarray, ndarray, ndarray]:
@@ -374,7 +343,7 @@ def add_atom_to_voxel(
         voxels_coords: coordinates of the 20*20*20 voxels.
         voxels_bool: voxel array in bool.
         partial_charges: partial_charge channel, 20*20*20 array.
-        struct_pqr: PQR structure.
+        partial_charge_results: dictionary containing partial charge results and serial number
         sasa_results: results of solvent accessible surface area.
         sasa: solvent accessible surface area array.
 
@@ -386,19 +355,17 @@ def add_atom_to_voxel(
 
     radius_table = {"C": 1.7, "O": 1.37, "N": 1.45, "P": 1.49, "S": 1.7, "H": 1.0}
 
-    chain = atom.parent.parent
-    res_full_name = atom.parent.get_id()
-    pqr_atom = struct_pqr[0][chain.id][res_full_name][atom.name]
-
     dists_element_voxels_coords = np.sqrt(np.sum((voxels_coords - atom_coord) ** 2, axis=-1))
     # (20, 20, 20)
     contact_element_voxel_coords = np.where(dists_element_voxels_coords <= radius_table[atom.element])
     add_bool = contact_element_voxel_coords
     voxels_bool[add_bool[0].T, add_bool[1].T, add_bool[2].T] = True
     if arguments.add_partial_charges:
-        partial_charges[add_bool[0].T, add_bool[1].T, add_bool[2].T] = pqr_atom.get_charge()
+        partial_charges[add_bool[0].T, add_bool[1].T, add_bool[2].T] = partial_charge_results.get(
+            atom.serial_number, 0.0
+        )
     if arguments.add_sasa:
-        sasa[add_bool[0].T, add_bool[1].T, add_bool[2].T] = sasa_results.atomArea(atom.get_serial_number())
+        sasa[add_bool[0].T, add_bool[1].T, add_bool[2].T] = sasa_results.atomArea(atom.get_altloc())
 
     return voxels_bool, partial_charges, sasa
 
@@ -423,28 +390,31 @@ def visualize_voxels(arguments, voxel_list: List):
     plt.show()
 
 
-def cal_sasa(struct, struct_pqr, pdb_name):
+def cal_sasa(struct):
     """Calculate sasa results for the given structure."""
-    elements_list = ["C", "N", "O", "S"]
     # calculate sasa
     all_radiis = []
     all_coords = []
-    # pqr content
-    pqr_model = struct_pqr[0]
+    radiusSingleAtom = {"C": 1.7, "O": 1.37, "N": 1.45, "P": 1.49, "S": 1.7, "H": 1.0}
     idx = 0
     for atom in struct.get_atoms():
-        if atom.element not in elements_list:
-            continue
-        chain = atom.parent.parent
-        res_full_id = atom.parent.get_id()
-        atom_name = atom.name
-        all_radiis.append(pqr_model[chain.id][res_full_id][atom_name].radius)
         all_coords.append(atom.coord)
-        atom.set_serial_number(idx)
+        all_radiis.append(radiusSingleAtom[atom.element])
+        atom.set_altloc(idx)
         idx += 1
 
     sasa_results = freesasa.calcCoord(np.array(all_coords).flatten(), all_radiis)
     return sasa_results
+
+
+def cal_partial_charges(mol):
+    charge_dict = {}
+    # compute partial charges
+    AllChem.ComputeGasteigerCharges(mol)
+    for atom in mol.GetAtoms():
+        pdb_info = atom.GetPDBResidueInfo()
+        charge_dict[pdb_info.GetSerialNumber()] = float(atom.GetProp('_GasteigerCharge'))
+    return charge_dict
 
 
 def generate_atom_list_dict(voxel_atom_list):
@@ -457,7 +427,7 @@ def generate_atom_list_dict(voxel_atom_list):
     return dict_atom
 
 
-def gen_voxel_binary_array(arguments, f, struct, struct_pqr, pdb_name,
+def gen_voxel_binary_array(arguments, f, struct, mol, pdb_name,
                            voxel_atom_lists: List, rot_mats: List,
                            central_atom_coords: List, boxes_counter: dict,):
     """This function generates voxel binary array given the
@@ -467,7 +437,7 @@ def gen_voxel_binary_array(arguments, f, struct, struct_pqr, pdb_name,
         arguments: arguments of the user.
         f: hdf5 file for the pdb
         struct: PDB structure in biopython.
-        struct_pqr: PDB structure in corresponding pqr file.
+        mol: Mol of PDB structure.
         pdb_name: PDB ID of interest.
         voxel_atom_lists: voxel atom lists of each voxel box. (len = num of residues in total)
         rot_mats: rotation matrix of each voxel box. (len = num of residues in total)
@@ -475,7 +445,10 @@ def gen_voxel_binary_array(arguments, f, struct, struct_pqr, pdb_name,
         boxes_counter: {"chain_id": number_of_boxes_in_the_chain}
     """
     # calculate sasa
-    sasa_results = cal_sasa(struct, struct_pqr, pdb_name) if arguments.add_sasa else None
+    sasa_results = cal_sasa(struct) if arguments.add_sasa else None
+
+    # calculate partial charges
+    partial_charge_results = cal_partial_charges(mol) if arguments.add_partial_charges else dict()
 
     # for idx, voxel_atom_list, rot_mat, central_atom_coord in tqdm(zip(
     #         np.arange(len(voxel_atom_lists)), voxel_atom_lists, rot_mats, central_atom_coords
@@ -500,7 +473,7 @@ def gen_voxel_binary_array(arguments, f, struct, struct_pqr, pdb_name,
                 voxel_atom_list,
                 rot_mat,
                 central_atom_coord,
-                struct_pqr,
+                partial_charge_results,
                 sasa_results,
             )
             all_voxel.append(selected_element_voxel)
@@ -558,55 +531,58 @@ def count_res(struct: Bio.PDB.Structure.Structure) -> int:
     return num
 
 
-@ray.remote
-def gen_voxel_box_file(arguments, idx, logger):
-    """The main function of generating voxels.
-
-    Args:
-        idx: idx of file
-        arguments: arguments input from user.
-        logger: logger from data_gen.py
-    """
-    # configuration set up
-    pdb_name = arguments.pdb_name
-    pdb_path = arguments.pdb_path
-    pdb_id = arguments.pdb_id
-
-    logger.info(f"Dealing with file index: {idx}, {str(Path(arguments.hdf5_file_dir) / pdb_id) + '.hdf5'}")
-
-    # Load protein structure
-    struct, struct_pqr, skip = load_protein(arguments, pdb_name, pdb_path)
-
-    if not skip:
-        # start a hdf5 file
-        f = h5py.File(str(Path(arguments.hdf5_file_dir) / pdb_id) + ".hdf5", "w", track_order=True)
-        (
-            voxel_atom_lists, rot_mats, central_atom_coords, boxes_counter
-        ) = generate_voxel_atom_lists(struct)  # (num_ca, num_atoms_in_voxel)
-        gen_voxel_binary_array(arguments, f, struct, struct_pqr, pdb_name,
-                               voxel_atom_lists, rot_mats, central_atom_coords, boxes_counter)
-        f.close()
-
-# @hydra.main(version_base=None, config_path="../../config/voxel_box", config_name="voxel_box")
-# def gen_voxel_box_file(arguments):
+# @ray.remote
+# def gen_voxel_box_file(arguments, idx, logger):
 #     """The main function of generating voxels.
 #
 #     Args:
+#         idx: idx of file
 #         arguments: arguments input from user.
+#         logger: logger from data_gen.py
 #     """
 #     # configuration set up
-#     pdb_name = ""
-#     pdb_path = "3c70.pdb1"
-#     pdb_id = "3c70"
+#     pdb_name = arguments.pdb_name
+#     pdb_path = arguments.pdb_path
+#     pdb_id = arguments.pdb_id
+#
+#     logger.info(f"Dealing with file index: {idx}, {str(Path(arguments.hdf5_file_dir) / pdb_id) + '.hdf5'}")
 #
 #     # Load protein structure
-#     struct, struct_pqr = load_protein(arguments, pdb_name, pdb_path)
+#     struct, mol, skip = load_protein(arguments, pdb_name, pdb_path)
 #
-#     # start a hdf5 file
-#     f = h5py.File(str(Path.cwd() / pdb_id) + ".hdf5",  "w", track_order=True)
-#     (
-#         voxel_atom_lists, rot_mats, central_atom_coords, boxes_counter
-#     ) = generate_voxel_atom_lists(struct)  # (num_ca, num_atoms_in_voxel)
-#     gen_voxel_binary_array(arguments, f, struct, struct_pqr, pdb_name,
-#                            voxel_atom_lists, rot_mats, central_atom_coords, boxes_counter)
-#     f.close()
+#     if not skip:
+#         # start a hdf5 file
+#         f = h5py.File(str(Path(arguments.hdf5_file_dir) / pdb_id) + ".hdf5", "w", track_order=True)
+#         (
+#             voxel_atom_lists, rot_mats, central_atom_coords, boxes_counter
+#         ) = generate_voxel_atom_lists(struct)  # (num_ca, num_atoms_in_voxel)
+#         gen_voxel_binary_array(arguments, f, struct, mol, pdb_name,
+#                                voxel_atom_lists, rot_mats, central_atom_coords, boxes_counter)
+#         f.close()
+
+@hydra.main(version_base=None, config_path="../../config/voxel_box", config_name="voxel_box")
+def gen_voxel_box_file(arguments):
+    """The main function of generating voxels.
+
+    Args:
+        arguments: arguments input from user.
+    """
+    # configuration set up
+    pdb_name = ""
+    pdb_path = "3c70.pdb1"
+    pdb_id = "3c70"
+
+    # Load protein structure
+    struct, mol, skip = load_protein(arguments, pdb_name, pdb_path)
+
+    # start a hdf5 file
+    f = h5py.File(str(Path.cwd() / pdb_id) + ".hdf5",  "w", track_order=True)
+    (
+        voxel_atom_lists, rot_mats, central_atom_coords, boxes_counter
+    ) = generate_voxel_atom_lists(struct)  # (num_ca, num_atoms_in_voxel)
+    gen_voxel_binary_array(arguments, f, struct, mol, pdb_name,
+                           voxel_atom_lists, rot_mats, central_atom_coords, boxes_counter)
+    f.close()
+
+if __name__ == "__main__":
+    gen_voxel_box_file()
