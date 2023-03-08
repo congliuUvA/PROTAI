@@ -39,8 +39,9 @@ def training(
         progress_bar = tqdm(train_loader)
         model.train()
         acc_train = 0
+        loss_train = 0.0
         for idx, data_train in enumerate(progress_bar):
-            loss_train, preds, labels = train_step(
+            loss_train_step, preds, labels = train_step(
                 data_train, model, loss_func,
                 optimizer, lr_scheduler,
                 device, scaler
@@ -49,7 +50,9 @@ def training(
             preds_int = torch.max(preds.detach(), dim=1)[-1].cpu()
             acc_train_step = (preds_int == labels_int).sum() / preds.shape[0]
             acc_train += acc_train_step
-            progress_bar.set_postfix(acc=f'{acc_train / (idx + 1):.3f}')
+            loss_train += loss_train_step
+            progress_bar.set_postfix(acc=f'{acc_train / (idx + 1):.3f}',
+                                     loss=f'{loss_train / (idx + 1):.3f}')
             wandb_run.log({"loss_train": loss_train, "train_axis": train_log_idx})
             wandb_run.log({"acc_train": acc_train / (idx + 1), "train_axis": train_log_idx})
             wandb_run.log({"learning_rate": optimizer.param_groups[0]['lr'], "train_axis": train_log_idx})
@@ -190,7 +193,7 @@ def main(args: DictConfig):
     )
     val_dataloader = DataLoader(
         dataset=val_set,
-        batch_size=4096,
+        batch_size=1024,
         shuffle=False,
         num_workers=args_model.num_workers,
         pin_memory=True,
@@ -244,8 +247,8 @@ def main(args: DictConfig):
         else:
             train_dataloader = DataLoader(
                 dataset=train_set,
-                batch_size=args_model.batch_size,
-                shuffle=True,
+                batch_size=1,
+                shuffle=False,
                 num_workers=args_model.num_workers,
                 pin_memory=True,
             )
