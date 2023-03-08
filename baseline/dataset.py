@@ -75,8 +75,9 @@ class VoxelsDataset(Dataset):
         self.gen_updated_csv()
         # if dataset is used for training, generate weight list for each of the instance,
         # WeightedSampler will sample instances based on their weights, thus yielding batches with similar distribution.
-        if self.training and self.use_sampler:
-            self.gen_proportion_list()
+        # if self.training and self.use_sampler:
+        #     self.gen_proportion_list()
+        self.gen_proportion_list()
 
     def __len__(self) -> int:
         """Return the length of the dataset.
