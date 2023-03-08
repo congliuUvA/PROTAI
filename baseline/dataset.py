@@ -123,14 +123,9 @@ class VoxelsDataset(Dataset):
             f = h5py.File(hdf5_file, "r")
             if chain not in list(f.keys()):
                 continue
-            try:
-                f[list(f.keys())[0]].attrs["label_list"]
-            except KeyError:
-                continue
             # each box count as one data sample
-            for i, box_idx in enumerate(f[chain]):
-                # label = "" if not self.use_sampler else f[chain][box_idx].attrs["residue_name"]
-                label = "" if not self.use_sampler else f[chain].attrs["label_list"][i]
+            for box_idx in f[chain]:
+                label = "" if not self.use_sampler else f[chain][box_idx].attrs["residue_name"]
                 self.look_up_table[data_idx] = str(hdf5_file) + "$" + str(chain) + "$" + box_idx + "$" + label
                 data_idx += 1
             f.close()
