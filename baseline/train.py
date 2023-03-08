@@ -192,6 +192,7 @@ def main(args: DictConfig):
         transform=transformation,
         use_sampler=args_model.use_sampler,
     )
+    logger.info(val_set.length)
     val_dataloader = DataLoader(
         dataset=val_set,
         batch_size=1024,
