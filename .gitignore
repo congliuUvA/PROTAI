@@ -17,3 +17,4 @@ baseline/cp_hddstore.py
 *.pdb1
 *.pqr
 *.log
+add_label_list.py
