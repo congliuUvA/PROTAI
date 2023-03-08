@@ -127,11 +127,10 @@ class VoxelsDataset(Dataset):
                 label = "" if not self.use_sampler else f[chain][box_idx].attrs["residue_name"]
                 self.look_up_table[data_idx] = str(hdf5_file) + "$" + str(chain) + "$" + box_idx + "$" + label
                 data_idx += 1
-            self.length += f[chain].attrs["num_boxes"]
             f.close()
             if data_idx > self.limit_th:
                 break
-
+        self.length = data_idx
     def gen_proportion_list(self):
         self.freq = {}
         self.proportion_list = []
