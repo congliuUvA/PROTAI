@@ -34,6 +34,7 @@ def data_gen(args: DictConfig):
     np.save(str(gz_npy_path), gz_file_list) if not gz_npy_path.exists() else None
 
     # decide how many files in gz_file_list to generate
+    np.random.seed(0)
     np.random.shuffle(gz_file_list)
     gz_file_list = gz_file_list[:int(len(gz_file_list) * args_data.proportion_pdb)]
 
