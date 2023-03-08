@@ -95,7 +95,7 @@ def data_gen(args: DictConfig):
             idx += 1
 
     # ray.get(tasks)
-    logger.info(f"{args_data.partition_idx + 1} / {args_data.num_partition} completed!")
+    logger.info(f"{args_data.partition_idx} / {args_data.num_partition} completed!")
 
 
 if __name__ == "__main__":
