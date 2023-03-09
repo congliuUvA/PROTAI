@@ -79,22 +79,23 @@ def data_gen(args: DictConfig):
 
         # if pdb id is not in the list, skip the pdb file.
         if pdb_pure_id in pdb_id_array:
-            logger.info(f"Dealing with file index: {idx}, {str(Path(hdf5_file_dir) / pdb_id) + '.hdf5'}")
-            # unzip pdb file
-            pdb_unzip = ".".join(str(pdb).split(".")[:-1])
-            os.system(f"gunzip -c {pdb} > {pdb_unzip}")
+            if not (Path(hdf5_file_dir) / pdb_id).exists():
+                logger.info(f"Dealing with file index: {idx}, {str(Path(hdf5_file_dir) / pdb_id) + '.hdf5'}")
+                # unzip pdb file
+                pdb_unzip = ".".join(str(pdb).split(".")[:-1])
+                os.system(f"gunzip -c {pdb} > {pdb_unzip}")
 
-            # assign pdb info to args_voxel_box
-            args_voxel_box.pdb_name = pdb_pure_id
-            args_voxel_box.pdb_path = pdb_unzip
-            args_voxel_box.pdb_id = pdb_id
+                # assign pdb info to args_voxel_box
+                args_voxel_box.pdb_name = pdb_pure_id
+                args_voxel_box.pdb_path = pdb_unzip
+                args_voxel_box.pdb_id = pdb_id
 
-            task = gen_voxel_box_file.remote(args_voxel_box, idx)
-            # gen_voxel_box_file(args_voxel_box, idx)
+                task = gen_voxel_box_file.remote(args_voxel_box, idx)
+                # gen_voxel_box_file(args_voxel_box, idx)
 
-            tasks.append(task)
+                tasks.append(task)
 
-            idx += 1
+                idx += 1
 
     ray.get(tasks)
     logger.info(f"{args_data.partition_idx} / {args_data.num_partition} completed!")
