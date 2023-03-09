@@ -218,6 +218,18 @@ def main(args: DictConfig):
         pin_memory=True,
     )
 
+    fold_idx = "all"
+    train_set = VoxelsDataset(
+        hdf5_files_path=hdf5_file_path,
+        dataset_split_csv_path=dataset_split_csv_path,
+        training=True,
+        fold=fold_idx,
+        k_fold_test=False,
+        transform=transformation,
+        use_sampler=args_model.use_sampler
+    )
+    logger.info(train_set.freq)
+
     loss_func = nn.CrossEntropyLoss()
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     if args_model.model_name == "CNN":
@@ -232,7 +244,6 @@ def main(args: DictConfig):
         model.load_state_dict(state_dict["state_dict"])
 
     optimizer, lr_scheduler = get_optimizer(args_model, model)
-    fold_idx = "all"
     # initialize wandb
     wandb_run = wandb.init(
         project="3DCNN",
@@ -241,16 +252,6 @@ def main(args: DictConfig):
     )
     best_ckpt_path_list, best_acc_list = [], []
     with wandb_run:
-        train_set = VoxelsDataset(
-            hdf5_files_path=hdf5_file_path,
-            dataset_split_csv_path=dataset_split_csv_path,
-            training=True,
-            fold=fold_idx,
-            k_fold_test=False,
-            transform=transformation,
-            use_sampler=args_model.use_sampler
-        )
-        logger.info(train_set.freq)
         if args_model.use_sampler:
             weighted_sampler = WeightedRandomSampler(
                 weights=train_set.proportion_list,
