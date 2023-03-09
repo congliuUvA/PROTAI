@@ -93,7 +93,7 @@ def data_gen(args: DictConfig):
 
             tasks.append(task)
 
-            idx += 1
+        idx += 1
 
     # ray.get(tasks)
     logger.info(f"{args_data.partition_idx} / {args_data.num_partition} completed!")
