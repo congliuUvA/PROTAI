@@ -53,7 +53,7 @@ def training(
             loss_train += loss_train_step
             progress_bar.set_postfix(acc=f'{acc_train / (idx + 1):.3f}',
                                      loss=f'{loss_train / (idx + 1):.3f}')
-            wandb_run.log({"loss_train": loss_train, "train_axis": train_log_idx})
+            wandb_run.log({"loss_train": loss_train / (idx + 1), "train_axis": train_log_idx})
             wandb_run.log({"acc_train": acc_train / (idx + 1), "train_axis": train_log_idx})
             wandb_run.log({"learning_rate": optimizer.param_groups[0]['lr'], "train_axis": train_log_idx})
             train_log_idx += 1
@@ -72,7 +72,7 @@ def training(
             acc_val += acc_val_step
             loss_val += loss_val_step
             progress_bar.set_postfix(acc=f'{acc_val / (idx + 1):.3f}')
-            wandb_run.log({"loss_val": loss_val, "val_axis": val_log_idx})
+            wandb_run.log({"loss_val": loss_val / (idx + 1), "val_axis": val_log_idx})
             wandb_run.log({"acc_val": acc_val / (idx + 1), "val_axis": val_log_idx})
             val_log_idx += 1
         best_acc_val, best_ckpt_path = update_best_checkpoint(
