@@ -209,6 +209,7 @@ def main(args: DictConfig):
         use_sampler=args_model.use_sampler,
     )
     logger.info(f"validation set has {val_set.length} instances.")
+    logger.info(val_set.freq)
     val_dataloader = DataLoader(
         dataset=val_set,
         batch_size=args_model.batch_size,
@@ -249,6 +250,7 @@ def main(args: DictConfig):
             transform=transformation,
             use_sampler=args_model.use_sampler
         )
+        logger.info(train_set.freq)
         if args_model.use_sampler:
             weighted_sampler = WeightedRandomSampler(
                 weights=train_set.proportion_list,

@@ -1,7 +1,7 @@
 # configuration of 3DCNN
 
 #use sampler to generate batches with similar distributions.
-use_sampler: False
+use_sampler: True
 # number of folds in training set.
 folds: 5
 # model name
