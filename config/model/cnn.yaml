@@ -5,7 +5,7 @@ use_sampler: True
 # number of folds in training set.
 folds: 5
 # model name
-model_name: ResNet
+model_name: CNN
 # batch size
 batch_size: 1024
 # number of epochs need to be run
