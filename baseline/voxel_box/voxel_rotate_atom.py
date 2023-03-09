@@ -396,10 +396,13 @@ def cal_sasa(struct):
     all_radiis = []
     all_coords = []
     radiusSingleAtom = {"C": 1.7, "O": 1.37, "N": 1.45, "P": 1.49, "S": 1.7, "H": 1.0}
+    table = freesasa.Classifier()
     idx = 0
     for atom in struct.get_atoms():
         all_coords.append(atom.coord)
-        all_radiis.append(radiusSingleAtom[atom.element])
+        atom_radii = radiusSingleAtom[atom.element] if atom.element in radiusSingleAtom \
+            else max(table.radius(atom.parent.get_resname(), atom.element), 0)
+        all_radiis.append(atom_radii)
         atom.set_altloc(idx)
         idx += 1
 
