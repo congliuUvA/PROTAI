@@ -85,6 +85,8 @@ def training(
         model_save_path = checkpoint_dir / f"{fold}_{args_model.model_name}_{epoch}.pt"
         save_checkpoint(model, optimizer, lr_scheduler, str(model_save_path), epoch)
 
+        lr_scheduler.step()
+
     return best_ckpt_path, best_acc_val
 
 
@@ -108,7 +110,6 @@ def train_step(data_train,
     scaler.unscale_(optimizer)
     scaler.step(optimizer)
     scaler.update()
-    lr_scheduler.step()
 
     # optimizer.zero_grad()
     # preds = model(voxel_boxes)  # (bs, 20)
@@ -183,7 +184,7 @@ def get_optimizer(args_model, model):
         optimizer = torch.optim.SGD(model.parameters(), lr=args_model.lr, momentum=0.75)
         optimizer = torch.optim.Adam(model.parameters(), lr=args_model.lr)
 
-        lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=7000, gamma=0.1)
+        lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.1)
 
     return optimizer, lr_scheduler
 
