@@ -20,7 +20,10 @@ from Bio.PDB.MMCIFParser import MMCIFParser
 import os
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from baseline.utils import log
 import hydra
+
+logger = log.get_logger(__name__)
 
 num_of_voxels = 20
 len_of_voxel = 0.8
@@ -535,7 +538,7 @@ def count_res(struct: Bio.PDB.Structure.Structure) -> int:
 
 
 @ray.remote
-def gen_voxel_box_file(arguments, idx, logger):
+def gen_voxel_box_file(arguments, idx):
     """The main function of generating voxels.
 
     Args:
