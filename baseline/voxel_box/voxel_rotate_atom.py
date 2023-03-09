@@ -549,8 +549,6 @@ def gen_voxel_box_file(arguments, idx):
     pdb_path = arguments.pdb_path
     pdb_id = arguments.pdb_id
 
-    print(f"Dealing with file index: {idx}, {str(Path(arguments.hdf5_file_dir) / pdb_id) + '.hdf5'}")
-
     # Load protein structure
     struct, mol, skip = load_protein(arguments, pdb_name, pdb_path)
 

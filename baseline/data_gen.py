@@ -79,7 +79,7 @@ def data_gen(args: DictConfig):
 
         # if pdb id is not in the list, skip the pdb file.
         if pdb_pure_id in pdb_id_array:
-            logger.info(f"{idx}, {str(pdb)}")
+            logger.info(f"Dealing with file index: {idx}, {str(Path(hdf5_file_dir) / pdb_id) + '.hdf5'}")
             # unzip pdb file
             pdb_unzip = ".".join(str(pdb).split(".")[:-1])
             os.system(f"gunzip -c {pdb} > {pdb_unzip}")
