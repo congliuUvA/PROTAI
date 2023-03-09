@@ -96,6 +96,7 @@ def train_step(data_train,
                device,
                scaler):
     voxel_boxes, labels = data_train
+    print(torch.isnan(voxel_boxes))
     voxel_boxes = torch.where(torch.isnan(voxel_boxes), torch.full_like(voxel_boxes, 0), voxel_boxes)
     voxel_boxes, labels = voxel_boxes.to(device), labels.to(device)
 
