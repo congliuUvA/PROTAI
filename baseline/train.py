@@ -98,6 +98,7 @@ def train_step(data_train,
     voxel_boxes, labels = data_train
     print(torch.any(torch.isnan(voxel_boxes)), torch.any(torch.isinf(voxel_boxes)))
     voxel_boxes = torch.where(torch.isnan(voxel_boxes), torch.full_like(voxel_boxes, 0), voxel_boxes)
+    voxel_boxes = torch.where(torch.isinf(voxel_boxes), torch.full_like(voxel_boxes, 0), voxel_boxes)
     print(torch.any(torch.isnan(voxel_boxes)), torch.any(torch.isinf(voxel_boxes)))
     voxel_boxes, labels = voxel_boxes.to(device), labels.to(device)
 
