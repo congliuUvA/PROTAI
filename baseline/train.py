@@ -122,6 +122,7 @@ def train_step(data_train,
 def val_step(data_val, model, loss_func, device):
     with torch.no_grad():
         voxel_boxes, labels = data_val
+        voxel_boxes = torch.where(torch.isnan(voxel_boxes), torch.full_like(voxel_boxes, 0), voxel_boxes)
         voxel_boxes, labels = voxel_boxes.to(device), labels.to(device)
         preds = model(voxel_boxes)  # (bs, 20)
         loss_val = loss_func(preds, labels)
