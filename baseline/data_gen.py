@@ -93,9 +93,10 @@ def data_gen(args: DictConfig):
             #
             # tasks.append(task)
             logger.info("in", idx)
-
+        else:
+            logger.info("not", idx)
         idx += 1
-        logger.info("not", idx)
+
 
     # ray.get(tasks)
     logger.info(f"{args_data.partition_idx} / {args_data.num_partition} completed!")
