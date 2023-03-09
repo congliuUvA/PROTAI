@@ -72,7 +72,6 @@ def data_gen(args: DictConfig):
     tasks = []
     logger.info(gz_file_list[start: end].shape)
     for pdb in gz_file_list[start: end]:
-        logger.info(f"{idx}, {str(pdb)}")
         # unzipped pdb file name
         pdb_pure_id = pdb.name.split(".")[0]
         assembly_id = pdb.name.split(".")[1]
@@ -80,6 +79,7 @@ def data_gen(args: DictConfig):
 
         # if pdb id is not in the list, skip the pdb file.
         if pdb_pure_id in pdb_id_array:
+            logger.info(f"{idx}, {str(pdb)}")
             # unzip pdb file
             pdb_unzip = ".".join(str(pdb).split(".")[:-1])
             os.system(f"gunzip -c {pdb} > {pdb_unzip}")
