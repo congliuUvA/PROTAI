@@ -25,4 +25,4 @@ num_partition: 2
 use_transform: False
 
 # proportion of pdb to generate
-proportion_pdb: 0.01
+proportion_pdb: 0.25
