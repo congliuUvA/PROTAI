@@ -96,24 +96,25 @@ def train_step(data_train,
                device,
                scaler):
     voxel_boxes, labels = data_train
+    voxel_boxes = torch.where(torch.isnan(voxel_boxes), torch.full_like(voxel_boxes, 0), voxel_boxes)
     voxel_boxes, labels = voxel_boxes.to(device), labels.to(device)
 
-    # optimizer.zero_grad()
-    # with torch.cuda.amp.autocast():
-    #     preds = model(voxel_boxes)  # (bs, 20)
-    #     loss_train = loss_func(preds, labels)
-    # scaler.scale(loss_train).backward()
-    # scaler.unscale_(optimizer)
-    # scaler.step(optimizer)
-    # scaler.update()
-    # lr_scheduler.step()
-
     optimizer.zero_grad()
-    preds = model(voxel_boxes)  # (bs, 20)
-    loss_train = loss_func(preds, labels)
-    loss_train.backward()
-    optimizer.step()
+    with torch.cuda.amp.autocast():
+        preds = model(voxel_boxes)  # (bs, 20)
+        loss_train = loss_func(preds, labels)
+    scaler.scale(loss_train).backward()
+    scaler.unscale_(optimizer)
+    scaler.step(optimizer)
+    scaler.update()
     lr_scheduler.step()
+
+    # optimizer.zero_grad()
+    # preds = model(voxel_boxes)  # (bs, 20)
+    # loss_train = loss_func(preds, labels)
+    # loss_train.backward()
+    # optimizer.step()
+    # lr_scheduler.step()
 
     return loss_train.item(), preds, labels,
 
