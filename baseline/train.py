@@ -61,15 +61,18 @@ def training(
         model.eval()
         progress_bar = tqdm(val_loader)
         acc_val = 0
+        loss_val = 0
         for idx, data_val in enumerate(progress_bar):
-            preds, labels = val_step(
+            preds, labels, loss_val_step = val_step(
                 data_val, model, loss_func, device
             )
             labels_int = torch.where(labels == 1)[-1].cpu()
             preds_int = torch.max(preds.detach(), dim=1)[-1].cpu()
             acc_val_step = (preds_int == labels_int).sum() / preds.shape[0]
             acc_val += acc_val_step
+            loss_val += loss_val_step
             progress_bar.set_postfix(acc=f'{acc_val / (idx + 1):.3f}')
+            wandb_run.log({"loss_val": loss_val, "val_axis": val_log_idx})
             wandb_run.log({"acc_val": acc_val / (idx + 1), "val_axis": val_log_idx})
             val_log_idx += 1
         best_acc_val, best_ckpt_path = update_best_checkpoint(
@@ -112,7 +115,8 @@ def val_step(data_val, model, loss_func, device):
         voxel_boxes, labels = data_val
         voxel_boxes, labels = voxel_boxes.to(device), labels.to(device)
         preds = model(voxel_boxes)  # (bs, 20)
-    return preds, labels
+        loss_val = loss_func(preds, labels)
+    return preds, labels, loss_val
 
 
 def update_best_checkpoint(acc_val, best_acc_val, best_checkpoint_path,
@@ -195,7 +199,7 @@ def main(args: DictConfig):
     logger.info(val_set.length)
     val_dataloader = DataLoader(
         dataset=val_set,
-        batch_size=1024,
+        batch_size=args_model.batch_size,
         shuffle=False,
         num_workers=args_model.num_workers,
         pin_memory=True,
