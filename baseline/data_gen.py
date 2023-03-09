@@ -93,14 +93,10 @@ def data_gen(args: DictConfig):
             # gen_voxel_box_file(args_voxel_box, idx)
 
             tasks.append(task)
+
             idx += 1
-        else:
-            idx += 1
-            continue
 
-
-
-    # ray.get(tasks)
+    ray.get(tasks)
     logger.info(f"{args_data.partition_idx} / {args_data.num_partition} completed!")
 
 
