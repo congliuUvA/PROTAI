@@ -92,9 +92,9 @@ def data_gen(args: DictConfig):
             # # gen_voxel_box_file(args_voxel_box, idx)
             #
             # tasks.append(task)
-            logger.info("in", idx)
+            logger.info(f"in {idx}")
         else:
-            logger.info("not", idx)
+            logger.info(f"not {idx}")
         idx += 1
 
 
