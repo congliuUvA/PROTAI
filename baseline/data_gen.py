@@ -72,6 +72,7 @@ def data_gen(args: DictConfig):
     tasks = []
     logger.info(gz_file_list[start: end].shape)
     for pdb in gz_file_list[start: end]:
+        logger.info(f"{idx}, {str(pdb)}")
         # unzipped pdb file name
         pdb_pure_id = pdb.name.split(".")[0]
         assembly_id = pdb.name.split(".")[1]

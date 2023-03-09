@@ -20,8 +20,6 @@ from Bio.PDB.MMCIFParser import MMCIFParser
 import os
 from rdkit import Chem
 from rdkit.Chem import AllChem
-import logging
-import sys
 import hydra
 
 
@@ -36,43 +34,6 @@ RES_NAME = ["ALA", "ARG", "ASN", "ASP", "CYS",
 PDB_parser = PDBParser(QUIET=1)
 PQR_parser = PDBParser(QUIET=1, is_pqr=True)
 CIF_parser = MMCIFParser(QUIET=1)
-
-
-def get_logger(name: str) -> logging.Logger:
-    """Configuring Logging.
-
-    The log level depends on the environment variable `VM_LOG_LEVEL`.
-    - 0: NOTSET, will be set to DEBUG
-    - 1: DEBUG
-    - 2: INFO (default)
-    - 3: WARNING
-    - 4: ERROR
-    - 5: CRITICAL
-
-    Args:
-        name: module name.
-
-    Returns:
-        logger: configured logger.
-    """
-    # create logger
-    logger = logging.getLogger(name=name)
-    logger.propagate = False
-    log_level = 1
-    log_level_int = max(int(log_level) * 10, 10)
-    logger.setLevel(logging.DEBUG)
-    # create console handler
-    console_handler = logging.StreamHandler(stream=sys.stdout)
-    console_handler.setLevel(log_level_int)
-    # create formatter and add it to handler
-    formatter = logging.Formatter(
-        fmt="%(asctime)s — %(name)s — %(levelname)s — %(funcName)s:%(lineno)d — %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-    )
-    console_handler.setFormatter(formatter)
-    # add handler to the logger
-    logger.addHandler(console_handler)
-    return logger
 
 
 def load_protein(arguments, pdb_name: str, file_path: str) -> Bio.PDB.Structure.Structure:
@@ -582,14 +543,13 @@ def gen_voxel_box_file(arguments, idx):
         idx: idx of file
         arguments: arguments input from user.
     """
-    logger = get_logger(__name__)
 
     # configuration set up
     pdb_name = arguments.pdb_name
     pdb_path = arguments.pdb_path
     pdb_id = arguments.pdb_id
 
-    logger.info(f"Dealing with file index: {idx}, {str(Path(arguments.hdf5_file_dir) / pdb_id) + '.hdf5'}")
+    print(f"Dealing with file index: {idx}, {str(Path(arguments.hdf5_file_dir) / pdb_id) + '.hdf5'}")
 
     # Load protein structure
     struct, mol, skip = load_protein(arguments, pdb_name, pdb_path)
