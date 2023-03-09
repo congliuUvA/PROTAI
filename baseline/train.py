@@ -98,15 +98,23 @@ def train_step(data_train,
     voxel_boxes, labels = data_train
     voxel_boxes, labels = voxel_boxes.to(device), labels.to(device)
 
+    # optimizer.zero_grad()
+    # with torch.cuda.amp.autocast():
+    #     preds = model(voxel_boxes)  # (bs, 20)
+    #     loss_train = loss_func(preds, labels)
+    # scaler.scale(loss_train).backward()
+    # scaler.unscale_(optimizer)
+    # scaler.step(optimizer)
+    # scaler.update()
+    # lr_scheduler.step()
+
     optimizer.zero_grad()
-    with torch.cuda.amp.autocast():
-        preds = model(voxel_boxes)  # (bs, 20)
-        loss_train = loss_func(preds, labels)
-    scaler.scale(loss_train).backward()
-    scaler.unscale_(optimizer)
-    scaler.step(optimizer)
-    scaler.update()
+    preds = model(voxel_boxes)  # (bs, 20)
+    loss_train = loss_func(preds, labels)
+    loss_train.backward()
+    optimizer.step()
     lr_scheduler.step()
+
     return loss_train.item(), preds, labels,
 
 
@@ -196,7 +204,7 @@ def main(args: DictConfig):
         transform=transformation,
         use_sampler=args_model.use_sampler,
     )
-    logger.info(val_set.length)
+    logger.info(f"validation set has {val_set.length} instances.")
     val_dataloader = DataLoader(
         dataset=val_set,
         batch_size=args_model.batch_size,
@@ -204,7 +212,6 @@ def main(args: DictConfig):
         num_workers=args_model.num_workers,
         pin_memory=True,
     )
-    logger.info(val_set.freq)
 
     loss_func = nn.CrossEntropyLoss()
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -238,7 +245,6 @@ def main(args: DictConfig):
             transform=transformation,
             use_sampler=args_model.use_sampler
         )
-        logger.info(train_set.freq)
         if args_model.use_sampler:
             weighted_sampler = WeightedRandomSampler(
                 weights=train_set.proportion_list,

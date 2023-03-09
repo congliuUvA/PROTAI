@@ -32,7 +32,7 @@ class CNN(nn.Module):
         Args:
             x: input signal.
         """
-        # x = self.instance_norm0(x)
+        x = self.instance_norm0(x)
 
         x = self.dropout_3d(self.relu(self.conv_layer1(x)))
         x = self.batch_norm1(x)
