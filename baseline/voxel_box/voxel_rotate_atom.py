@@ -492,8 +492,8 @@ def gen_voxel_binary_array(arguments, f, struct, mol, pdb_name,
         # store voxel, partial_charges and sasa as file format of hdf5
         if arguments.add_sasa and arguments.add_partial_charges:
             all_voxel = all_voxel + all_partial_charges + all_sasa
-        # binary voxel box for 4 / 12 channels
-        voxel_per_residue = np.array(all_voxel, dtype=np.half)  # (4 / 12, 20, 20, 20)
+        # binary voxel box for 4 / 12 channels, (4 / 12, 20, 20, 20)
+        voxel_per_residue = np.array(all_voxel, dtype=np.half if arguments.add_partial_charges else np.bool_)
 
         # metadata
         pdb_id = central_atom.parent.get_full_id()[0]
@@ -502,6 +502,7 @@ def gen_voxel_binary_array(arguments, f, struct, mol, pdb_name,
         residue_serial_number = central_atom.parent.get_full_id()[-1][-2]
         residue_position = central_atom.coord
         residue_icode = central_atom.parent.get_full_id()[-1][-1]
+        residue_full_info = str(central_atom.parent.get_full_id())
 
         # chain_group creation
         group = f.create_group(chain_id, track_order=True) if chain_id not in f else f[chain_id]
@@ -514,6 +515,7 @@ def gen_voxel_binary_array(arguments, f, struct, mol, pdb_name,
         dataset.attrs["residue_serial_number"] = residue_serial_number
         dataset.attrs["residue_position"] = residue_position
         dataset.attrs["residue_icode"] = residue_icode
+        dataset.attrs["residue_full_info"] = residue_full_info
 
     # record number of boxes in each chain and for whole pdb
     for chain_id, num_boxes in boxes_counter.items():
@@ -554,6 +556,7 @@ def gen_voxel_box_file(arguments, idx):
     # Load protein structure
     struct, mol, skip = load_protein(arguments, pdb_name, pdb_path)
 
+    skip = False if not arguments.add_partial_charges else skip
     if not skip:
         # start a hdf5 file
         f = h5py.File(str(Path(arguments.hdf5_file_dir) / pdb_id) + ".hdf5", "w", track_order=True)
@@ -578,15 +581,16 @@ def gen_voxel_box_file(arguments, idx):
 #
 #     # Load protein structure
 #     struct, mol, skip = load_protein(arguments, pdb_name, pdb_path)
-#
-#     # start a hdf5 file
-#     f = h5py.File(str(Path.cwd() / pdb_id) + ".hdf5",  "w", track_order=True)
-#     (
-#         voxel_atom_lists, rot_mats, central_atom_coords, boxes_counter
-#     ) = generate_voxel_atom_lists(struct)  # (num_ca, num_atoms_in_voxel)
-#     gen_voxel_binary_array(arguments, f, struct, mol, pdb_name,
-#                            voxel_atom_lists, rot_mats, central_atom_coords, boxes_counter)
-#     f.close()
+#     skip = False if not arguments.add_partial_charges else skip
+#     if not skip:
+#         # start a hdf5 file
+#         f = h5py.File(str(Path.cwd() / pdb_id) + ".hdf5",  "w", track_order=True)
+#         (
+#             voxel_atom_lists, rot_mats, central_atom_coords, boxes_counter
+#         ) = generate_voxel_atom_lists(struct)  # (num_ca, num_atoms_in_voxel)
+#         gen_voxel_binary_array(arguments, f, struct, mol, pdb_name,
+#                                voxel_atom_lists, rot_mats, central_atom_coords, boxes_counter)
+#         f.close()
 #
 # if __name__ == "__main__":
 #     gen_voxel_box_file()
