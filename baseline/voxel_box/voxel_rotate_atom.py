@@ -366,7 +366,8 @@ def add_atom_to_voxel(
             atom.serial_number, 0.0
         )
     if arguments.add_sasa:
-        sasa[add_bool[0].T, add_bool[1].T, add_bool[2].T] = sasa_results.atomArea(atom.get_altloc())
+        atom_sasa = sasa_results.atomArea(atom.get_altloc())
+        sasa[add_bool[0].T, add_bool[1].T, add_bool[2].T] = atom_sasa if not np.isinf(atom_sasa) else 0.0
 
     return voxels_bool, partial_charges, sasa
 
@@ -417,7 +418,8 @@ def cal_partial_charges(mol):
     AllChem.ComputeGasteigerCharges(mol)
     for atom in mol.GetAtoms():
         pdb_info = atom.GetPDBResidueInfo()
-        charge_dict[pdb_info.GetSerialNumber()] = float(atom.GetProp('_GasteigerCharge'))
+        charge = atom.GetProp('_GasteigerCharge')
+        charge_dict[pdb_info.GetSerialNumber()] = charge if not np.isnan(charge) else 0.0
     return charge_dict
 
 
