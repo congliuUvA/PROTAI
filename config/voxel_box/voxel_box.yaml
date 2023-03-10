@@ -6,9 +6,9 @@
 # Add hydrogen to the pdb file or not
 addH: False
 # Add partial charges to the file or not
-add_partial_charges: True
+add_partial_charges: False
 # Add sasa to the file or not
-add_sasa: True
+add_sasa: False
 # PDB pure ID
 pdb_name: "3gbn"
 # PDB file path
