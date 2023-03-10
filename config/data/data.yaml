@@ -19,10 +19,10 @@ smaller_hdf5_file_dir: smaller_voxels_hdf5
 partition_idx: 1
 
 # num of partitions of data generation
-num_partition: 2
+num_partition: 4
 
 # use gaussian transformation
 use_transform: False
 
 # proportion of pdb to generate
-proportion_pdb: 0.25
+proportion_pdb: 1

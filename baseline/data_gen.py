@@ -27,6 +27,13 @@ def data_gen(args: DictConfig):
     # dataset split csv path
     dataset_split_csv = root_dir / Path(args_data.dataset_split_csv)
 
+    # download raw data set if not existed in the WR.
+    if not raw_pdb_dir.exists():
+        raw_pdb_dir.mkdir()
+        logger.info("Start downloading raw pdb files...")
+        os.system("sh ../../download/rsyncPDB.sh")
+        logger.info('Finished downloading!')
+
     # load gz file list
     gz_npy_path = baseline_dir / "gz_file_list.npy"
     gz_file_list = np.load(str(gz_npy_path), allow_pickle=True) if gz_npy_path.exists() \
@@ -34,18 +41,9 @@ def data_gen(args: DictConfig):
     np.save(str(gz_npy_path), gz_file_list) if not gz_npy_path.exists() else None
 
     # decide how many files in gz_file_list to generate
-    np.random.seed(0)
-    np.random.shuffle(gz_file_list)
     gz_file_list = gz_file_list[:int(len(gz_file_list) * args_data.proportion_pdb)]
 
     logger.info(f"Processing {len(gz_file_list)} pdb files!")
-
-    # download raw data set if not existed in the WR.
-    if not raw_pdb_dir.exists():
-        raw_pdb_dir.mkdir()
-        logger.info("Start downloading raw pdb files...")
-        os.system("sh ../../download/rsyncPDB.sh")
-        logger.info('Finished downloading!')
 
     # create a directory for hdf5 files
     hdf5_file_dir = root_dir / Path(args_data.hdf5_file_dir)
@@ -59,13 +57,10 @@ def data_gen(args: DictConfig):
 
     idx, total = 0, gz_file_list.shape[0]
 
-    if args_data.num_partition != 1:
-        start_end_idx = [int(i * total / args_data.num_partition) for i in range(args_data.num_partition + 1)]
-        if not hasattr(args_data, "partition_idx"):
-            logger.debug("Please specify the partition index in command line!")
-        start, end = start_end_idx[args_data.partition_idx - 1], start_end_idx[args_data.partition_idx]
-    else:
-        start, end = 0, total
+    start_end_idx = [int(i * total / args_data.num_partition) for i in range(args_data.num_partition + 1)]
+    if not hasattr(args_data, "partition_idx"):
+        logger.debug("Please specify the partition index in command line!")
+    start, end = start_end_idx[args_data.partition_idx - 1], start_end_idx[args_data.partition_idx]
 
     # ray tasks
     logger.info("Start ray tasks.")
@@ -79,23 +74,22 @@ def data_gen(args: DictConfig):
 
         # if pdb id is not in the list, skip the pdb file.
         if pdb_pure_id in pdb_id_array:
-            if not (Path(hdf5_file_dir) / pdb_id).exists():
-                logger.info(f"Dealing with file index: {idx}, {str(Path(hdf5_file_dir) / pdb_id) + '.hdf5'}")
-                # unzip pdb file
-                pdb_unzip = ".".join(str(pdb).split(".")[:-1])
-                os.system(f"gunzip -c {pdb} > {pdb_unzip}")
+            logger.info(f"Dealing with file index: {idx}, {str(Path(hdf5_file_dir) / pdb_id) + '.hdf5'}")
+            # unzip pdb file
+            pdb_unzip = ".".join(str(pdb).split(".")[:-1])
+            os.system(f"gunzip -c {pdb} > {pdb_unzip}")
 
-                # assign pdb info to args_voxel_box
-                args_voxel_box.pdb_name = pdb_pure_id
-                args_voxel_box.pdb_path = pdb_unzip
-                args_voxel_box.pdb_id = pdb_id
+            # assign pdb info to args_voxel_box
+            args_voxel_box.pdb_name = pdb_pure_id
+            args_voxel_box.pdb_path = pdb_unzip
+            args_voxel_box.pdb_id = pdb_id
 
-                task = gen_voxel_box_file.remote(args_voxel_box, idx)
-                # gen_voxel_box_file(args_voxel_box, idx)
+            task = gen_voxel_box_file.remote(args_voxel_box, idx)
+            # gen_voxel_box_file(args_voxel_box, idx)
 
-                tasks.append(task)
+            tasks.append(task)
 
-                idx += 1
+            idx += 1
 
     ray.get(tasks)
     logger.info(f"{args_data.partition_idx} / {args_data.num_partition} completed!")
