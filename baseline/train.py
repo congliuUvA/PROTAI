@@ -233,7 +233,7 @@ def main(args: DictConfig):
         transform=transformation,
         use_sampler=args_model.use_sampler
     )
-    logger.info(train_set.freq)
+    logger.info(f"training set has {val_set.length} instances.")
 
     loss_func = nn.CrossEntropyLoss()
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
