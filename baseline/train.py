@@ -12,6 +12,7 @@ from utils.log import get_logger
 from omegaconf import DictConfig, OmegaConf
 import math
 import numpy as np
+import matplotlib.pyplot as plt
 
 logger = get_logger(__name__)
 
@@ -21,6 +22,25 @@ residue_name = [
     "LEU", "LYS", "MET", "PHE", "PRO",
     "SER", "THR", "TRP", "TYR", "VAL"
 ]
+
+
+def gen_heat_map(arr: np.ndarray):
+    # Create the heatmap plot using Matplotlib
+    fig, ax = plt.subplots()
+    im = ax.imshow(arr)
+    # Customize the plot
+    ax.set_xticks(np.arange(len(residue_name)))
+    ax.set_yticks(np.arange(len(residue_name)))
+    ax.set_xticklabels(residue_name)
+    ax.set_yticklabels(residue_name)
+    plt.setp(ax.get_xticklabels(), rotation=45, ha='right', rotation_mode='anchor')
+    cbar = ax.figure.colorbar(im, ax=ax)
+
+    # Add a title to the plot
+    ax.set_title("Heatmap")
+
+    return fig
+
 
 def training(
         args_model,
@@ -68,7 +88,7 @@ def training(
             preds_numpy = preds_int.numpy()
             conf_mat_train[labels_numpy, preds_numpy] += 1
             conf_mat_train = conf_mat_train / np.sum(conf_mat_train, 1).reshape(-1, 1)
-
+            fig = gen_heat_map(conf_mat_train)
             progress_bar.set_postfix(acc=f'{acc_train / (idx + 1):.3f}',
                                      loss=f'{loss_train / (idx + 1):.3f}')
             wandb_run.log({"loss_train": loss_train / (idx + 1), "train_axis": train_log_idx})
@@ -76,9 +96,7 @@ def training(
             wandb_run.log({"loss_train_step": loss_train_step, "train_axis": train_log_idx})
             wandb_run.log({"acc_train_step": acc_train_step, "train_axis": train_log_idx})
             wandb_run.log({"learning_rate": optimizer.param_groups[0]['lr'], "train_axis": train_log_idx})
-            wandb_run.log(
-                {'confusion_matrix': wandb.plots.HeatMap(residue_name, residue_name, conf_mat_train)}
-            )
+            wandb_run.log({'confusion_matrix': wandb.Image(fig), "train_axis": train_log_idx})
             train_log_idx += 1
 
         model.eval()
@@ -102,15 +120,13 @@ def training(
             preds_numpy = preds_int.numpy()
             conf_mat_val[labels_numpy, preds_numpy] += 1
             conf_mat_val = conf_mat_val / np.sum(conf_mat_val, 1).reshape(-1, 1)
-
+            fig = gen_heat_map(conf_mat_val)
             progress_bar.set_postfix(acc=f'{acc_val / (idx + 1):.3f}')
             wandb_run.log({"loss_val": loss_val / (idx + 1), "val_axis": val_log_idx})
             wandb_run.log({"acc_val": acc_val / (idx + 1), "val_axis": val_log_idx})
             wandb_run.log({"loss_val_step": loss_val_step, "val_axis": val_log_idx})
             wandb_run.log({"acc_val_step": acc_val_step, "val_axis": val_log_idx})
-            wandb_run.log(
-                {'confusion_matrix': wandb.plots.HeatMap(residue_name, residue_name, conf_mat_val, show_text=True)}
-            )
+            wandb_run.log({'confusion_matrix': wandb.Image(fig), "val_axis": val_log_idx})
             val_log_idx += 1
         best_acc_val, best_ckpt_path = update_best_checkpoint(
             acc_val / (idx + 1), best_acc_val, best_ckpt_path,
