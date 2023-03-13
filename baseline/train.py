@@ -11,9 +11,16 @@ import torch.nn as nn
 from utils.log import get_logger
 from omegaconf import DictConfig, OmegaConf
 import math
+import numpy as np
 
 logger = get_logger(__name__)
 
+residue_name = [
+    "ALA", "ARG", "ASN", "ASP", "CYS",
+    "GLU", "GLN", "GLY", "HIS", "ILE",
+    "LEU", "LYS", "MET", "PHE", "PRO",
+    "SER", "THR", "TRP", "TYR", "VAL"
+]
 
 def training(
         args_model,
@@ -40,6 +47,8 @@ def training(
         model.train()
         acc_train = 0
         loss_train = 0.0
+        # confusion matrix for training
+        conf_mat_train = np.zeros((args_model.num_classes, args_model.num_classes))
         for idx, data_train in enumerate(progress_bar):
             loss_train_step, preds, labels = train_step(
                 data_train, model, loss_func,
@@ -48,9 +57,18 @@ def training(
             )
             labels_int = torch.where(labels == 1)[-1].cpu()
             preds_int = torch.max(preds.detach(), dim=1)[-1].cpu()
+
+            # accumulate loss and acc.
             acc_train_step = (preds_int == labels_int).sum() / preds.shape[0]
             acc_train += acc_train_step
             loss_train += loss_train_step
+
+            # record confusion matrix
+            labels_numpy = labels_int.numpy()
+            preds_numpy = preds_int.numpy()
+            conf_mat_train[labels_numpy, preds_numpy] += 1
+            conf_mat_train = conf_mat_train / np.sum(conf_mat_train, 1).reshape(-1, 1)
+
             progress_bar.set_postfix(acc=f'{acc_train / (idx + 1):.3f}',
                                      loss=f'{loss_train / (idx + 1):.3f}')
             wandb_run.log({"loss_train": loss_train / (idx + 1), "train_axis": train_log_idx})
@@ -58,12 +76,17 @@ def training(
             wandb_run.log({"loss_train_step": loss_train_step, "train_axis": train_log_idx})
             wandb_run.log({"acc_train_step": acc_train_step, "train_axis": train_log_idx})
             wandb_run.log({"learning_rate": optimizer.param_groups[0]['lr'], "train_axis": train_log_idx})
+            wandb_run.log(
+                {'confusion_matrix': wandb.plots.HeatMap(residue_name, residue_name, conf_mat_train, show_text=True)}
+            )
             train_log_idx += 1
 
         model.eval()
         progress_bar = tqdm(val_loader)
         acc_val = 0
         loss_val = 0
+        # confusion matrix for val
+        conf_mat_val = np.zeros((args_model.num_classes, args_model.num_classes))
         for idx, data_val in enumerate(progress_bar):
             preds, labels, loss_val_step = val_step(
                 data_val, model, loss_func, device
@@ -73,11 +96,21 @@ def training(
             acc_val_step = (preds_int == labels_int).sum() / preds.shape[0]
             acc_val += acc_val_step
             loss_val += loss_val_step
+
+            # record confusion matrix
+            labels_numpy = labels_int.numpy()
+            preds_numpy = preds_int.numpy()
+            conf_mat_val[labels_numpy, preds_numpy] += 1
+            conf_mat_val = conf_mat_val / np.sum(conf_mat_val, 1).reshape(-1, 1)
+
             progress_bar.set_postfix(acc=f'{acc_val / (idx + 1):.3f}')
             wandb_run.log({"loss_val": loss_val / (idx + 1), "val_axis": val_log_idx})
             wandb_run.log({"acc_val": acc_val / (idx + 1), "val_axis": val_log_idx})
             wandb_run.log({"loss_val_step": loss_val_step, "val_axis": val_log_idx})
             wandb_run.log({"acc_val_step": acc_val_step, "val_axis": val_log_idx})
+            wandb_run.log(
+                {'confusion_matrix': wandb.plots.HeatMap(residue_name, residue_name, conf_mat_val, show_text=True)}
+            )
             val_log_idx += 1
         best_acc_val, best_ckpt_path = update_best_checkpoint(
             acc_val / (idx + 1), best_acc_val, best_ckpt_path,
