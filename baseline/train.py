@@ -221,7 +221,7 @@ def get_optimizer(args_model, model):
         optimizer = torch.optim.SGD(model.parameters(), lr=args_model.lr, momentum=0.75)
         optimizer = torch.optim.Adam(model.parameters(), lr=args_model.lr)
 
-        lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.1)
+        lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=1, gamma=0.1)
 
     return optimizer, lr_scheduler
 
