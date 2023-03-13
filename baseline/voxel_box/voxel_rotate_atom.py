@@ -556,7 +556,6 @@ def gen_voxel_box_file(arguments, idx):
     # Load protein structure
     struct, mol, skip = load_protein(arguments, pdb_name, pdb_path)
 
-    skip = False if not arguments.add_partial_charges else skip
     if not skip:
         # start a hdf5 file
         f = h5py.File(str(Path(arguments.hdf5_file_dir) / pdb_id) + ".hdf5", "w", track_order=True)
