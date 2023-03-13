@@ -96,7 +96,7 @@ def training(
             wandb_run.log({"loss_train_step": loss_train_step, "train_axis": train_log_idx})
             wandb_run.log({"acc_train_step": acc_train_step, "train_axis": train_log_idx})
             wandb_run.log({"learning_rate": optimizer.param_groups[0]['lr'], "train_axis": train_log_idx})
-            wandb_run.log({'confusion_matrix': wandb.Image(fig), "train_axis": train_log_idx})
+            wandb_run.log({'confusion_matrix_train': wandb.Image(fig), "train_axis": train_log_idx})
             train_log_idx += 1
 
         model.eval()
@@ -126,7 +126,7 @@ def training(
             wandb_run.log({"acc_val": acc_val / (idx + 1), "val_axis": val_log_idx})
             wandb_run.log({"loss_val_step": loss_val_step, "val_axis": val_log_idx})
             wandb_run.log({"acc_val_step": acc_val_step, "val_axis": val_log_idx})
-            wandb_run.log({'confusion_matrix': wandb.Image(fig), "val_axis": val_log_idx})
+            wandb_run.log({'confusion_matrix_val': wandb.Image(fig), "val_axis": val_log_idx})
             val_log_idx += 1
         best_acc_val, best_ckpt_path = update_best_checkpoint(
             acc_val / (idx + 1), best_acc_val, best_ckpt_path,
