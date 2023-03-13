@@ -77,7 +77,7 @@ def training(
             wandb_run.log({"acc_train_step": acc_train_step, "train_axis": train_log_idx})
             wandb_run.log({"learning_rate": optimizer.param_groups[0]['lr'], "train_axis": train_log_idx})
             wandb_run.log(
-                {'confusion_matrix': wandb.plots.HeatMap(residue_name, residue_name, conf_mat_train, show_text=True)}
+                {'confusion_matrix': wandb.plots.HeatMap(residue_name, residue_name, conf_mat_train)}
             )
             train_log_idx += 1
 
