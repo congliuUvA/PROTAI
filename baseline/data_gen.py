@@ -73,6 +73,7 @@ def data_gen(args: DictConfig):
     val_pdb_list = []
     val_instances = 0
     val_pdb_id = (dataset_split_pd.loc[dataset_split_pd["set"] == "validation"]).id
+    print(val_pdb_id.shape, val_pdb_id[0])
     for pdb in gz_file_list[start: end]:
         # unzipped pdb file name
         pdb_pure_id = pdb.name.split(".")[0]
