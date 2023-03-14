@@ -66,6 +66,11 @@ def data_gen(args: DictConfig):
     logger.info("Start ray tasks.")
     tasks = []
     logger.info(gz_file_list[start: end].shape)
+
+    # record val instances
+    val_pdb_list = []
+    val_instances = 0
+    val_pdb_id = (dataset_split_pd.loc[dataset_split_pd["set"] == "validation"]).id
     for pdb in gz_file_list[start: end]:
         # unzipped pdb file name
         pdb_pure_id = pdb.name.split(".")[0]
@@ -84,12 +89,19 @@ def data_gen(args: DictConfig):
             args_voxel_box.pdb_path = pdb_unzip
             args_voxel_box.pdb_id = pdb_id
 
-            task = gen_voxel_box_file.remote(args_voxel_box, idx)
-            # gen_voxel_box_file(args_voxel_box, idx)
+            task = gen_voxel_box_file.remote(args_voxel_box)
+            # gen_voxel_box_file(args_voxel_box)
 
             tasks.append(task)
 
             idx += 1
+
+            if (pdb_pure_id in val_pdb_id) and (pdb_pure_id not in val_pdb_list):
+                val_pdb_list.append(pdb_pure_id)
+                val_instances += len(np.where(val_pdb_id == pdb_pure_id)[0])
+
+            if val_instances > 4e6:
+                break
 
     ray.get(tasks)
     logger.info(f"{args_data.partition_idx} / {args_data.num_partition} completed!")
