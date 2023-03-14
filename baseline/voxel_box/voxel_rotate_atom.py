@@ -456,12 +456,12 @@ def gen_voxel_binary_array(arguments, f, struct, mol, pdb_name,
     # calculate partial charges
     partial_charge_results = cal_partial_charges(mol) if arguments.add_partial_charges else dict()
 
-    # for idx, voxel_atom_list, rot_mat, central_atom_coord in tqdm(zip(
-    #         np.arange(len(voxel_atom_lists)), voxel_atom_lists, rot_mats, central_atom_coords
-    # ), total=len(voxel_atom_lists)):
-    for idx, voxel_atom_list, rot_mat, central_atom_coord in zip(
+    for idx, voxel_atom_list, rot_mat, central_atom_coord in tqdm(zip(
             np.arange(len(voxel_atom_lists)), voxel_atom_lists, rot_mats, central_atom_coords
-    ):
+    ), total=len(voxel_atom_lists)):
+    # for idx, voxel_atom_list, rot_mat, central_atom_coord in zip(
+    #         np.arange(len(voxel_atom_lists)), voxel_atom_lists, rot_mats, central_atom_coords
+    # ):
         # take out the central atom
         central_atom = voxel_atom_list[0]
 
