@@ -42,6 +42,8 @@ def data_gen(args: DictConfig):
 
     # decide how many files in gz_file_list to generate
     gz_file_list = gz_file_list[:int(len(gz_file_list) * args_data.proportion_pdb)]
+    np.random.seed(0)
+    np.random.shuffle(gz_file_list)
 
     logger.info(f"Processing {len(gz_file_list)} pdb files!")
 
