@@ -110,6 +110,7 @@ class VoxelsDataset(Dataset):
         return voxel, label
 
     def gen_updated_csv(self):
+        limit = self.limit_th if self.val else self.limit_th / 10
         # length accumulate list, prepared for indexing specific box in the data set.
         data_idx = 0
         # iterate through all files in sub set
@@ -129,7 +130,7 @@ class VoxelsDataset(Dataset):
                 self.look_up_table[data_idx] = str(hdf5_file) + "$" + str(chain) + "$" + box_idx + "$" + label
                 data_idx += 1
             f.close()
-            if data_idx > self.limit_th:
+            if data_idx > limit:
                 break
         self.length = data_idx
 
