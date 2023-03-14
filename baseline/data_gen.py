@@ -44,6 +44,7 @@ def data_gen(args: DictConfig):
     gz_file_list = gz_file_list[:int(len(gz_file_list) * args_data.proportion_pdb)]
     np.random.seed(0)
     np.random.shuffle(gz_file_list)
+    gz_file_list = gz_file_list[:len(gz_file_list) * args_data.proportion_pdb]
 
     logger.info(f"Processing {len(gz_file_list)} pdb files!")
 
@@ -69,11 +70,6 @@ def data_gen(args: DictConfig):
     tasks = []
     logger.info(gz_file_list[start: end].shape)
 
-    # record val instances
-    val_pdb_list = []
-    val_instances = 0
-    val_pdb_id = np.array((dataset_split_pd.loc[dataset_split_pd["set"] == "validation"]).id)
-    print(val_pdb_id.shape, val_pdb_id[0])
     for pdb in gz_file_list[start: end]:
         # unzipped pdb file name
         pdb_pure_id = pdb.name.split(".")[0]
@@ -98,14 +94,6 @@ def data_gen(args: DictConfig):
             tasks.append(task)
 
             idx += 1
-
-            if (pdb_pure_id in val_pdb_id) and (pdb_pure_id not in val_pdb_list):
-                val_pdb_list.append(pdb_pure_id)
-                val_instances += len(np.where(val_pdb_id == pdb_pure_id)[0])
-                print(len(np.where(val_pdb_id == pdb_pure_id)[0]))
-
-            if val_instances > 4e6:
-                break
 
     ray.get(tasks)
     logger.info(f"{args_data.partition_idx} / {args_data.num_partition} completed!")
