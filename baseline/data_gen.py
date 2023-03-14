@@ -72,7 +72,7 @@ def data_gen(args: DictConfig):
     # record val instances
     val_pdb_list = []
     val_instances = 0
-    val_pdb_id = (dataset_split_pd.loc[dataset_split_pd["set"] == "validation"]).id
+    val_pdb_id = np.array((dataset_split_pd.loc[dataset_split_pd["set"] == "validation"]).id)
     print(val_pdb_id.shape, val_pdb_id[0])
     for pdb in gz_file_list[start: end]:
         # unzipped pdb file name
