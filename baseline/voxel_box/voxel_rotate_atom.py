@@ -539,50 +539,25 @@ def count_res(struct: Bio.PDB.Structure.Structure) -> int:
     return num
 
 
-# @ray.remote
-# def gen_voxel_box_file(arguments):
-#     """The main function of generating voxels.
-#
-#     Args:
-#         arguments: arguments input from user.
-#     """
-#
-#     # configuration set up
-#     pdb_name = arguments.pdb_name
-#     pdb_path = arguments.pdb_path
-#     pdb_id = arguments.pdb_id
-#
-#     # Load protein structure
-#     struct, mol, skip = load_protein(arguments, pdb_name, pdb_path)
-#
-#     if not skip:
-#         # start a hdf5 file
-#         f = h5py.File(str(Path(arguments.hdf5_file_dir) / pdb_id) + ".hdf5", "w", track_order=True)
-#         (
-#             voxel_atom_lists, rot_mats, central_atom_coords, boxes_counter
-#         ) = generate_voxel_atom_lists(struct)  # (num_ca, num_atoms_in_voxel)
-#         gen_voxel_binary_array(arguments, f, struct, mol, pdb_name,
-#                                voxel_atom_lists, rot_mats, central_atom_coords, boxes_counter)
-#         f.close()
-
-@hydra.main(version_base=None, config_path="../../config/voxel_box", config_name="voxel_box")
+@ray.remote
 def gen_voxel_box_file(arguments):
     """The main function of generating voxels.
 
     Args:
         arguments: arguments input from user.
     """
+
     # configuration set up
-    pdb_name = ""
-    pdb_path = "3c70.pdb1"
-    pdb_id = "3c70"
+    pdb_name = arguments.pdb_name
+    pdb_path = arguments.pdb_path
+    pdb_id = arguments.pdb_id
 
     # Load protein structure
     struct, mol, skip = load_protein(arguments, pdb_name, pdb_path)
-    skip = False if not arguments.add_partial_charges else skip
+
     if not skip:
         # start a hdf5 file
-        f = h5py.File(str(Path.cwd() / pdb_id) + ".hdf5",  "w", track_order=True)
+        f = h5py.File(str(Path(arguments.hdf5_file_dir) / pdb_id) + ".hdf5", "w", track_order=True)
         (
             voxel_atom_lists, rot_mats, central_atom_coords, boxes_counter
         ) = generate_voxel_atom_lists(struct)  # (num_ca, num_atoms_in_voxel)
@@ -590,5 +565,30 @@ def gen_voxel_box_file(arguments):
                                voxel_atom_lists, rot_mats, central_atom_coords, boxes_counter)
         f.close()
 
-if __name__ == "__main__":
-    gen_voxel_box_file()
+# @hydra.main(version_base=None, config_path="../../config/voxel_box", config_name="voxel_box")
+# def gen_voxel_box_file(arguments):
+#     """The main function of generating voxels.
+#
+#     Args:
+#         arguments: arguments input from user.
+#     """
+#     # configuration set up
+#     pdb_name = ""
+#     pdb_path = "3c70.pdb1"
+#     pdb_id = "3c70"
+#
+#     # Load protein structure
+#     struct, mol, skip = load_protein(arguments, pdb_name, pdb_path)
+#     skip = False if not arguments.add_partial_charges else skip
+#     if not skip:
+#         # start a hdf5 file
+#         f = h5py.File(str(Path.cwd() / pdb_id) + ".hdf5",  "w", track_order=True)
+#         (
+#             voxel_atom_lists, rot_mats, central_atom_coords, boxes_counter
+#         ) = generate_voxel_atom_lists(struct)  # (num_ca, num_atoms_in_voxel)
+#         gen_voxel_binary_array(arguments, f, struct, mol, pdb_name,
+#                                voxel_atom_lists, rot_mats, central_atom_coords, boxes_counter)
+#         f.close()
+#
+# if __name__ == "__main__":
+#     gen_voxel_box_file()
