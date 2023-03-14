@@ -129,7 +129,7 @@ class VoxelsDataset(Dataset):
                 self.look_up_table[data_idx] = str(hdf5_file) + "$" + str(chain) + "$" + box_idx + "$" + label
                 data_idx += 1
             f.close()
-            if data_idx > limit:
+            if data_idx > self.limit_th:
                 break
         self.length = data_idx
 
