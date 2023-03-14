@@ -131,7 +131,7 @@ def training(
             val_log_idx += 1
             plt.close(fig)
         best_acc_val, best_ckpt_path = update_best_checkpoint(
-            acc_val / (idx + 1), best_acc_val, best_ckpt_path,
+            args_model, acc_val / (idx + 1), best_acc_val, best_ckpt_path,
             fold, epoch, checkpoint_dir, model,
             optimizer, lr_scheduler
         )
@@ -187,11 +187,11 @@ def val_step(data_val, model, loss_func, device):
     return preds, labels, loss_val
 
 
-def update_best_checkpoint(acc_val, best_acc_val, best_checkpoint_path,
+def update_best_checkpoint(args_model, acc_val, best_acc_val, best_checkpoint_path,
                            fold, epoch, checkpoint_dir, model, optimizer, lr_scheduler, ):
     if acc_val > best_acc_val:
         best_acc_val = acc_val
-        best_checkpoint_path = checkpoint_dir / f"{fold}_CNN_{epoch}_best_acc_{acc_val}.pt"
+        best_checkpoint_path = checkpoint_dir / f"{fold}_{args_model.model_name}_{epoch}_best_acc_{acc_val}.pt"
         save_checkpoint(model, optimizer, lr_scheduler, best_checkpoint_path, epoch)
     return best_acc_val, best_checkpoint_path
 
