@@ -51,7 +51,7 @@ def load_protein(arguments, pdb_name: str, file_path: str) -> Bio.PDB.Structure.
     skip = False
     if arguments.add_partial_charges:
         mol = Chem.MolFromPDBFile(str(file_path))
-        if not mol:
+        if mol is None:
             skip = True
 
     struct = PDB_parser.get_structure(pdb_name, file_path)
