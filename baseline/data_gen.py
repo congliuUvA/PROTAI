@@ -22,10 +22,10 @@ def data_gen(args: DictConfig):
     root_dir = baseline_dir.parent if not args_data.use_hddstore else "/ssdstore/cliu3"
 
     # raw pdb file path
-    raw_pdb_dir = root_dir / Path(args_data.raw_pdb_dir)
+    raw_pdb_dir = baseline_dir.parent / Path(args_data.raw_pdb_dir)
 
     # dataset split csv path
-    dataset_split_csv = root_dir / Path(args_data.dataset_split_csv)
+    dataset_split_csv = baseline_dir.parent / Path(args_data.dataset_split_csv)
 
     # download raw data set if not existed in the WR.
     if not raw_pdb_dir.exists():
@@ -35,7 +35,7 @@ def data_gen(args: DictConfig):
         logger.info('Finished downloading!')
 
     # load gz file list
-    gz_npy_path = baseline_dir / "gz_file_list.npy"
+    gz_npy_path = baseline_dir.parent / "gz_file_list.npy"
     gz_file_list = np.load(str(gz_npy_path), allow_pickle=True) if gz_npy_path.exists() \
         else np.array([pdb for pdb in raw_pdb_dir.rglob("*.gz")])
     np.save(str(gz_npy_path), gz_file_list) if not gz_npy_path.exists() else None
