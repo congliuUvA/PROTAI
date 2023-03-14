@@ -110,7 +110,6 @@ class VoxelsDataset(Dataset):
         return voxel, label
 
     def gen_updated_csv(self):
-        limit = self.limit_th if self.val else self.limit_th / 10
         # length accumulate list, prepared for indexing specific box in the data set.
         data_idx = 0
         # iterate through all files in sub set
