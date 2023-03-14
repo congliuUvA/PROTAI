@@ -80,19 +80,19 @@ class ResNet3D(nn.Module):
         super(ResNet3D, self).__init__()
 
         self.instance_norm1 = nn.InstanceNorm3d(in_channels)
-        self.conv_layer1 = nn.Conv3d(in_channels, 64, kernel_size=(3, 3, 3))
-        self.batch_norm1 = nn.BatchNorm3d(64)
+        self.conv_layer1 = nn.Conv3d(in_channels, 32, kernel_size=(3, 3, 3))
+        self.batch_norm1 = nn.BatchNorm3d(32)
         self.relu = nn.ReLU()
 
-        self.in_channels = 64
+        self.in_channels = 32
 
-        self.layer1 = self._make_layer(block, 64, layers[0], stride=1)
-        self.layer2 = self._make_layer(block, 256, layers[1], stride=1)
-        self.layer3 = self._make_layer(block, 512, layers[2], stride=1)
-        self.layer4 = self._make_layer(block, 1024, layers[3], stride=1)
+        self.layer1 = self._make_layer(block, 32, layers[0], stride=1)
+        self.layer2 = self._make_layer(block, 64, layers[1], stride=1)
+        self.layer3 = self._make_layer(block, 64, layers[2], stride=1)
+        self.layer4 = self._make_layer(block, 128, layers[3], stride=1)
 
         self.avg_pool3d = nn.AvgPool3d(2)
-        self.fc = nn.Linear(1024, num_classes)
+        self.fc = nn.Linear(128, num_classes)
 
     def _make_layer(self, block, channels, num_blocks, stride):
         strides = [stride] + [1] * (num_blocks - 1)
