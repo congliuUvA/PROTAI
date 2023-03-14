@@ -101,6 +101,7 @@ def data_gen(args: DictConfig):
             if (pdb_pure_id in val_pdb_id) and (pdb_pure_id not in val_pdb_list):
                 val_pdb_list.append(pdb_pure_id)
                 val_instances += len(np.where(val_pdb_id == pdb_pure_id)[0])
+                print(val_instances)
 
             if val_instances > 4e6:
                 break
